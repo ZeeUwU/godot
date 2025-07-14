@@ -437,6 +437,13 @@ layout(set = 1, binding = 34) uniform texture2D ssil_buffer;
 
 #endif
 
+int get_light_count() {
+	int omni_count = omni_lights.data.length()
+	int spot_count = spot_lights.data.length()
+	int directional_count = directional_lights.data.length()
+	return(omni_count + spot_count + directional_count)
+}
+
 vec4 normal_roughness_compatibility(vec4 p_normal_roughness) {
 	float roughness = p_normal_roughness.w;
 	if (roughness > 0.5) {
