@@ -781,12 +781,6 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		actions.renames["ATTENUATION"] = "attenuation_highp";
 		actions.renames["DIFFUSE_LIGHT"] = "diffuse_light_highp";
 		actions.renames["SPECULAR_LIGHT"] = "specular_light_highp";
-		actions.renames["LIGHT_INDEX"] = "light_index";
-		actions.renames["LIGHT_COUNT"] = "light_count";
-
-		actions.usage_defines["LIGHT_INDEX"] = "#define LIGHT_SOURCE_INFO\n";
-		actions.usage_defines["LIGHT_COUNT"] = "#define LIGHT_SOURCE_INFO\n";
-
 
 		actions.usage_defines["NORMAL"] = "#define NORMAL_USED\n";
 		actions.usage_defines["TANGENT"] = "#define TANGENT_USED\n";
