@@ -2836,6 +2836,17 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef MODE_UNSHADED
 	frag_color = vec4(albedo, alpha);
 #else
+	float base_diffuse_intensity = (diffuse_light.x + diffuse_light.y + diffuse_light.z)/3.0;
+	base_diffuse_intensity = max(base_diffuse_intensity,0.01);
+
+	float stepped_diffuse_intensity = floor(base_diffuse_intensity * 5.0) * 0.2;
+	diffuse_light /= base_diffuse_intensity;
+	diffuse_light *= stepped_diffuse_intensity;
+
+
+	// diffuse_light = floor(diffuse_light * 5.0) * 0.2;
+	// this is bad because it results in weird colour blending
+
 	frag_color = vec4(emission + ambient_light + diffuse_light + direct_specular_light + indirect_specular_light, alpha);
 //frag_color = vec4(1.0);
 #endif //USE_NO_SHADING
