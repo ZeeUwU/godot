@@ -118,6 +118,22 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 	alpha = half(alpha_highp);
 	diffuse_light = hvec3(diffuse_light_highp);
 	specular_light = hvec3(specular_light_highp);
+
+	hvec3 H = normalize(V + L);
+	half cLdotH = clamp(A + dot(L, H), half(0.0), half(1.0));
+	half NdotL = min(A + dot(N, L), half(1.0));
+	half cNdotV = max(dot(N, V), half(1e-4));
+	half cNdotL = max(NdotL, half(0.0));
+
+
+	half FD90_minus_1 = half(2.0) * cLdotH * cLdotH * roughness - half(0.5);
+	half FdV = half(1.0) + FD90_minus_1 * SchlickFresnel(cNdotV);
+	half FdL = half(1.0) + FD90_minus_1 * SchlickFresnel(cNdotL);
+	half diffuse_brdf_NL = half(1.0 / M_PI) * FdV * FdL * cNdotL;
+	vec3 diffuse_result = light_color * diffuse_brdf_NL * attenuation;
+	diffuse_light += diffuse_result;
+	max_diffuse_intensity = max(max_diffuse_intensity, (diffuse_result.x + diffuse_result.y + diffuse_result.z)/3.0);
+
 #else // !LIGHT_CODE_USED
 	half NdotL = min(A + dot(N, L), half(1.0));
 	half cNdotV = max(dot(N, V), half(1e-4));
