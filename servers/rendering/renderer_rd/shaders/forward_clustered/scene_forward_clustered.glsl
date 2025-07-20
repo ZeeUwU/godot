@@ -2844,7 +2844,10 @@ void fragment_shader(in SceneData scene_data) {
 	float base_diffuse_intensity = (diffuse_light.x + diffuse_light.y + diffuse_light.z)/3.0;
 	base_diffuse_intensity = max(base_diffuse_intensity,0.01);
 
-	float stepped_diffuse_intensity = floor(max_diffuse_intensity * 5.0) * 0.2;
+	float bands = 5.0;
+
+	float stepped_diffuse_intensity = floor(max_diffuse_intensity * bands) / bands;
+	stepped_diffuse_intensity = clamp(stepped_diffuse_intensity, 0.0,1.0);
 	diffuse_light /= base_diffuse_intensity;
 	diffuse_light *= stepped_diffuse_intensity;
 
