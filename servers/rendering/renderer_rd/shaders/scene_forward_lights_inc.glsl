@@ -115,10 +115,14 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 
 #CODE : LIGHT
 
+
+	attenuation = half(attenuation_highp);
 	alpha = half(alpha_highp);
-	diffuse_light = hvec3(diffuse_light_highp);
-	specular_light = hvec3(specular_light_highp);
-#else // !LIGHT_CODE_USED
+	// diffuse_light = hvec3(diffuse_light_highp);
+	// specular_light = hvec3(specular_light_highp);
+// #else // !LIGHT_CODE_USED
+#endif  // LIGHT_CODE_USED
+
 	half NdotL = min(A + dot(N, L), half(1.0));
 	half cNdotV = max(dot(N, V), half(1e-4));
 
@@ -259,7 +263,7 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 		alpha = min(alpha, clamp(half(1.0 - attenuation), half(0.0), half(1.0)));
 #endif
 	}
-#endif // LIGHT_CODE_USED
+// #endif // LIGHT_CODE_USED
 }
 
 #ifndef SHADOWS_DISABLED
