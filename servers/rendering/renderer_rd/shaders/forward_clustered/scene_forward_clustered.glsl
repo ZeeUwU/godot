@@ -1571,7 +1571,7 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef NORMAL_USED
 	if (bool(scene_data.flags & SCENE_DATA_FLAGS_USE_ROUGHNESS_LIMITER)) {
 		//https://www.jp.square-enix.com/tech/library/pdf/ImprovedGeometricSpecularAA.pdf
-		float roughness2 = roughness * roughness;
+		float roughness2 = 1.0  * 1.0;
 		vec3 dndu = dFdx(normal), dndv = dFdy(normal);
 		float variance = scene_data.roughness_limiter_amount * (dot(dndu, dndu) + dot(dndv, dndv));
 		float kernelRoughness2 = min(2.0 * variance, scene_data.roughness_limiter_limit); //limit effect
@@ -1606,12 +1606,12 @@ void fragment_shader(in SceneData scene_data) {
 		vec3 anisotropic_direction = anisotropy >= 0.0 ? binormal : tangent;
 		vec3 anisotropic_tangent = cross(anisotropic_direction, view);
 		vec3 anisotropic_normal = cross(anisotropic_tangent, anisotropic_direction);
-		vec3 bent_normal = normalize(mix(normal, anisotropic_normal, abs(anisotropy) * clamp(5.0 * roughness, 0.0, 1.0)));
+		vec3 bent_normal = normalize(mix(normal, anisotropic_normal, abs(anisotropy) * clamp(5.0 * 1.0 , 0.0, 1.0)));
 		vec3 ref_vec = reflect(-view, bent_normal);
-		ref_vec = mix(ref_vec, bent_normal, roughness * roughness);
+		ref_vec = mix(ref_vec, bent_normal, 1.0 * 1.0);
 #else
 		vec3 ref_vec = reflect(-view, normal);
-		ref_vec = mix(ref_vec, normal, roughness * roughness);
+		ref_vec = mix(ref_vec, normal, 1.0  * 1.0);
 #endif
 
 		float horizon = min(1.0 + dot(ref_vec, normal), 1.0);
@@ -1621,12 +1621,12 @@ void fragment_shader(in SceneData scene_data) {
 
 		float lod, blend;
 
-		blend = modf(sqrt(roughness) * MAX_ROUGHNESS_LOD, lod);
+		blend = modf(sqrt(1.0 ) * MAX_ROUGHNESS_LOD, lod);
 		indirect_specular_light = texture(samplerCubeArray(radiance_cubemap, DEFAULT_SAMPLER_LINEAR_WITH_MIPMAPS_CLAMP), vec4(ref_vec, lod)).rgb;
 		indirect_specular_light = mix(indirect_specular_light, texture(samplerCubeArray(radiance_cubemap, DEFAULT_SAMPLER_LINEAR_WITH_MIPMAPS_CLAMP), vec4(ref_vec, lod + 1)).rgb, blend);
 
 #else
-		indirect_specular_light = textureLod(samplerCube(radiance_cubemap, DEFAULT_SAMPLER_LINEAR_WITH_MIPMAPS_CLAMP), ref_vec, sqrt(roughness) * MAX_ROUGHNESS_LOD).rgb;
+		indirect_specular_light = textureLod(samplerCube(radiance_cubemap, DEFAULT_SAMPLER_LINEAR_WITH_MIPMAPS_CLAMP), ref_vec, sqrt(1.0 ) * MAX_ROUGHNESS_LOD).rgb;
 
 #endif //USE_RADIANCE_CUBEMAP_ARRAY
 		indirect_specular_light *= scene_data.IBL_exposure_normalization;
@@ -2017,7 +2017,7 @@ void fragment_shader(in SceneData scene_data) {
 		// Apply cone to cone intersection with cosine weighted assumption:
 		// https://blog.selfshadow.com/publications/s2016-shading-course/activision/s2016_pbs_activision_occlusion.pdf
 		float cos_a_v = sqrt(1.0 - ao);
-		float limited_roughness = max(roughness, 0.01); // Avoid artifacts at really low roughness.
+		float limited_roughness = max(1.0, 0.01); // Avoid artifacts at really low roughness.
 		float cos_a_s = exp2((-log(10.0) / log(2.0)) * limited_roughness * limited_roughness);
 		float cos_b = dot(bent_normal_vector, reflect(-view, normal));
 
@@ -2048,7 +2048,7 @@ void fragment_shader(in SceneData scene_data) {
 		float specular_occlusion = (ambient_light.r * 0.3 + ambient_light.g * 0.59 + ambient_light.b * 0.11) * 2.0; // Luminance of ambient light.
 		specular_occlusion = min(specular_occlusion * 4.0, 1.0); // This multiplication preserves speculars on bright areas.
 
-		float reflective_f = (1.0 - roughness) * metallic;
+		float reflective_f = (1.0 - 1.0) * metallic;
 		// 10.0 is a magic number, it gives the intended effect in most scenarios.
 		// Low enough for occlusion, high enough for reaction to lights and shadows.
 		specular_occlusion = max(min(reflective_f * specular_occlusion * 10.0, 1.0), specular_occlusion);
@@ -2082,7 +2082,7 @@ void fragment_shader(in SceneData scene_data) {
 #else
 		// Base Layer
 		float NdotV = clamp(dot(normal, view), 0.0001, 1.0);
-		vec2 envBRDF = prefiltered_dfg(roughness, NdotV).xy;
+		vec2 envBRDF = prefiltered_dfg(1.0, NdotV).xy;
 		// Multiscattering
 		energy_compensation = get_energy_compensation(f0, envBRDF.y);
 
@@ -2771,7 +2771,7 @@ void fragment_shader(in SceneData scene_data) {
 #endif
 
 #ifdef MODE_RENDER_NORMAL_ROUGHNESS
-	normal_roughness_output_buffer = vec4(encode24(normal) * 0.5 + 0.5, roughness);
+	normal_roughness_output_buffer = vec4(encode24(normal) * 0.5 + 0.5, 1.0);
 
 	// We encode the dynamic static into roughness.
 	// Values over 0.5 are dynamic, under 0.5 are static.
