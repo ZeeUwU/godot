@@ -1814,7 +1814,7 @@ void fragment_shader(in SceneData scene_data) {
 			bool use_specular = true;
 			float blend;
 			vec3 diffuse, specular;
-			sdfgi_process(cascade, cascade_pos, cam_pos, cam_normal, cam_reflection, use_specular, roughness, diffuse, specular, blend);
+			sdfgi_process(cascade, cascade_pos, cam_pos, cam_normal, cam_reflection, use_specular, 1.0, diffuse, specular, blend);
 
 			if (blend > 0.0) {
 				//blend
@@ -1827,7 +1827,7 @@ void fragment_shader(in SceneData scene_data) {
 					vec3 diffuse2, specular2;
 					float blend2;
 					cascade_pos = (cam_pos - sdfgi.cascades[cascade + 1].position) * sdfgi.cascades[cascade + 1].to_probe;
-					sdfgi_process(cascade + 1, cascade_pos, cam_pos, cam_normal, cam_reflection, use_specular, roughness, diffuse2, specular2, blend2);
+					sdfgi_process(cascade + 1, cascade_pos, cam_pos, cam_normal, cam_reflection, use_specular, 1.0, diffuse2, specular2, blend2);
 					diffuse = mix(diffuse, diffuse2, blend);
 					if (use_specular) {
 						specular = mix(specular, specular2, blend);
@@ -1857,12 +1857,12 @@ void fragment_shader(in SceneData scene_data) {
 
 		vec4 amb_accum = vec4(0.0);
 		vec4 spec_accum = vec4(0.0);
-		voxel_gi_compute(index1, cam_pos, cam_normal, ref_vec, normal_mat, roughness * roughness, ambient_light, indirect_specular_light, spec_accum, amb_accum);
+		voxel_gi_compute(index1, cam_pos, cam_normal, ref_vec, normal_mat, 1.0 * 1.0, ambient_light, indirect_specular_light, spec_accum, amb_accum);
 
 		uint index2 = instances.data[instance_index].gi_offset >> 16;
 
 		if (index2 != 0xFFFF) {
-			voxel_gi_compute(index2, cam_pos, cam_normal, ref_vec, normal_mat, roughness * roughness, ambient_light, indirect_specular_light, spec_accum, amb_accum);
+			voxel_gi_compute(index2, cam_pos, cam_normal, ref_vec, normal_mat, 1.0 * 1.0, ambient_light, indirect_specular_light, spec_accum, amb_accum);
 		}
 
 		if (amb_accum.a > 0.0) {
@@ -1955,13 +1955,13 @@ void fragment_shader(in SceneData scene_data) {
 		vec3 anisotropic_direction = anisotropy >= 0.0 ? binormal : tangent;
 		vec3 anisotropic_tangent = cross(anisotropic_direction, view);
 		vec3 anisotropic_normal = cross(anisotropic_tangent, anisotropic_direction);
-		vec3 bent_normal = normalize(mix(normal, anisotropic_normal, abs(anisotropy) * clamp(5.0 * roughness, 0.0, 1.0)));
+		vec3 bent_normal = normalize(mix(normal, anisotropic_normal, abs(anisotropy) * clamp(5.0 * 1.0, 0.0, 1.0)));
 #else
 		vec3 bent_normal = normal;
 #endif
 		vec3 ref_vec = normalize(reflect(-view, bent_normal));
 		// Interpolate between mirror and rough reflection by using linear_roughness * linear_roughness.
-		ref_vec = mix(ref_vec, bent_normal, roughness * roughness * roughness * roughness);
+		ref_vec = mix(ref_vec, bent_normal, 1.0 * 1.0 * 1.0 * 1.0);
 
 		for (uint i = item_from; i < item_to; i++) {
 			uint mask = cluster_buffer.data[cluster_reflection_offset + i];
@@ -1985,8 +1985,8 @@ void fragment_shader(in SceneData scene_data) {
 				if (reflection_accum.a >= 1.0 && ambient_accum.a >= 1.0) {
 					break;
 				}
-
-				reflection_process(reflection_index, vertex, ref_vec, normal, roughness, ambient_light, indirect_specular_light, ambient_accum, reflection_accum);
+			// roughness removed here
+				reflection_process(reflection_index, vertex, ref_vec, normal, 1.0, ambient_light, indirect_specular_light, ambient_accum, reflection_accum);
 			}
 		}
 
