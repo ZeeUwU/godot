@@ -195,7 +195,8 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 
 #elif defined(DIFFUSE_BURLEY)
 			{
-				half FD90_minus_1 = half(2.0) * cLdotH * cLdotH * roughness - half(0.5);
+				// roughness hardcoded to 1.0 to free up buffer
+				half FD90_minus_1 = half(2.0) * cLdotH * cLdotH * 1.0 - half(0.5);
 				half FdV = half(1.0) + FD90_minus_1 * SchlickFresnel(cNdotV);
 				half FdL = half(1.0) + FD90_minus_1 * SchlickFresnel(cNdotL);
 				diffuse_brdf_NL = half(1.0 / M_PI) * FdV * FdL * cNdotL;
