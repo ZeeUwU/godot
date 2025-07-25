@@ -2771,7 +2771,7 @@ void fragment_shader(in SceneData scene_data) {
 #endif
 
 #ifdef MODE_RENDER_NORMAL_ROUGHNESS
-	normal_roughness_output_buffer = vec4(encode24(normal) * 0.5 + 0.5, 1.0);
+	normal_roughness_output_buffer = vec4(encode24(normal) * 0.5 + 0.5, roughness);
 
 	// We encode the dynamic static into roughness.
 	// Values over 0.5 are dynamic, under 0.5 are static.
