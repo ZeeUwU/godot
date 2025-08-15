@@ -94,6 +94,8 @@ void SceneShaderForwardClustered::ShaderData::set_code(const String &p_code) {
 	actions.entry_point_stages["vertex"] = ShaderCompiler::STAGE_VERTEX;
 	actions.entry_point_stages["fragment"] = ShaderCompiler::STAGE_FRAGMENT;
 	actions.entry_point_stages["light"] = ShaderCompiler::STAGE_FRAGMENT;
+	actions.entry_point_stages["post_light"] = ShaderCompiler::STAGE_FRAGMENT;
+
 
 	actions.render_mode_values["blend_add"] = Pair<int *, int>(&blend_mode, BLEND_MODE_ADD);
 	actions.render_mode_values["blend_mix"] = Pair<int *, int>(&blend_mode, BLEND_MODE_MIX);
@@ -781,6 +783,13 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		actions.renames["ATTENUATION"] = "attenuation_highp";
 		actions.renames["DIFFUSE_LIGHT"] = "diffuse_light_highp";
 		actions.renames["SPECULAR_LIGHT"] = "specular_light_highp";
+
+		// for post light
+	
+		actions.renames["MAX_DIFFUSE_INTENSITY"] = "max_diffuse_intensity";
+		actions.renames["AMBIENT_LIGHT"] = "ambient_light";
+		actions.renames["SPECULAR_LIGHT_LOWP"] = "specular_light";
+		actions.renames["DIFFUSE_LIGHT_LOWP"] = "diffuse_light";
 
 		actions.usage_defines["NORMAL"] = "#define NORMAL_USED\n";
 		actions.usage_defines["TANGENT"] = "#define TANGENT_USED\n";

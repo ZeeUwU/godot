@@ -2841,7 +2841,17 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef MODE_UNSHADED
 	frag_color = vec4(albedo, alpha);
 #else
+
+#if defined(POST_LIGHT_CODE_USED)
+
+	{
+#CODE : POST_LIGHT
+	}
+
+#else // !POST_LIGHT_CODE_USED
 	float base_diffuse_intensity = (diffuse_light.x + diffuse_light.y + diffuse_light.z)/3.0;
+
+
 	base_diffuse_intensity = max(base_diffuse_intensity,0.01);
 
 	float bands = 5.0;
@@ -2851,6 +2861,8 @@ void fragment_shader(in SceneData scene_data) {
 	stepped_diffuse_intensity = clamp(stepped_diffuse_intensity, 0.0,1.0);
 	diffuse_light /= base_diffuse_intensity;
 	diffuse_light *= stepped_diffuse_intensity;
+
+#endif //POST_LIGHT_CODE_USED
 
 
 	// diffuse_light = floor(diffuse_light * 5.0) * 0.2;
