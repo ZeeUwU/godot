@@ -2850,14 +2850,24 @@ void fragment_shader(in SceneData scene_data) {
 
 #else // !POST_LIGHT_CODE_USED
 	float base_diffuse_intensity = (diffuse_light.x + diffuse_light.y + diffuse_light.z)/3.0;
-
+	// float base_diffuse_intensity = dot(diffuse_light,vec3(0.21,0.72,0.07));
 
 	base_diffuse_intensity = max(base_diffuse_intensity,0.01);
 
 	float bands = 5.0;
-	float offset = 1.0/bands;
+	// float offset = 1.0/bands;
 
-	float stepped_diffuse_intensity = (floor(max_diffuse_intensity * bands) / bands) - offset;
+	// float stepped_diffuse_intensity = (floor(max_diffuse_intensity * bands) / bands) - offset;
+
+	// Not sure why I was flooring instead of rounding here, hopefully should remove need for offset :)
+
+	// float stepped_diffuse_intensity = (round(max_diffuse_intensity * bands) / bands);
+
+
+	// Floor + 0.5 is more consistent than rounding in glsl. Offsets properly built in also
+	float stepped_diffuse_intensity = (floor((max_diffuse_intensity * (bands-1.0))+0.5) / (bands-1.0));
+
+
 	stepped_diffuse_intensity = clamp(stepped_diffuse_intensity, 0.0,1.0);
 	diffuse_light /= base_diffuse_intensity;
 	diffuse_light *= stepped_diffuse_intensity;
