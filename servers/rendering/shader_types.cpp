@@ -129,6 +129,9 @@ ShaderTypes::ShaderTypes() {
 	shader_modes[RS::SHADER_SPATIAL].functions["vertex"].built_ins["VIEW_RIGHT"] = constt(ShaderLanguage::TYPE_INT);
 	shader_modes[RS::SHADER_SPATIAL].functions["vertex"].built_ins["EYE_OFFSET"] = constt(ShaderLanguage::TYPE_VEC3);
 
+	shader_modes[RS::SHADER_SPATIAL].functions["vertex"].built_ins["BANDS"] = ShaderLanguage::TYPE_FLOAT;
+
+
 	shader_modes[RS::SHADER_SPATIAL].functions["fragment"].built_ins["VERTEX"] = constt(ShaderLanguage::TYPE_VEC3);
 	shader_modes[RS::SHADER_SPATIAL].functions["fragment"].built_ins["LIGHT_VERTEX"] = ShaderLanguage::TYPE_VEC3;
 	shader_modes[RS::SHADER_SPATIAL].functions["fragment"].built_ins["FRAGCOORD"] = constt(ShaderLanguage::TYPE_VEC4);
@@ -196,6 +199,9 @@ ShaderTypes::ShaderTypes() {
 	shader_modes[RS::SHADER_SPATIAL].functions["fragment"].built_ins["ALPHA_ANTIALIASING_EDGE"] = ShaderLanguage::TYPE_FLOAT;
 	shader_modes[RS::SHADER_SPATIAL].functions["fragment"].built_ins["ALPHA_TEXTURE_COORDINATE"] = ShaderLanguage::TYPE_VEC2;
 
+	shader_modes[RS::SHADER_SPATIAL].functions["fragment"].built_ins["BANDS"] = ShaderLanguage::TYPE_FLOAT;
+
+
 	shader_modes[RS::SHADER_SPATIAL].functions["light"].built_ins["MODEL_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);
 	shader_modes[RS::SHADER_SPATIAL].functions["light"].built_ins["VIEW_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);
 	shader_modes[RS::SHADER_SPATIAL].functions["light"].built_ins["INV_VIEW_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);
@@ -225,6 +231,8 @@ ShaderTypes::ShaderTypes() {
 	shader_modes[RS::SHADER_SPATIAL].functions["light"].can_discard = true;
 	shader_modes[RS::SHADER_SPATIAL].functions["light"].main_function = true;
 
+	shader_modes[RS::SHADER_SPATIAL].functions["light"].built_ins["BANDS"] = ShaderLanguage::TYPE_FLOAT;
+
 	shader_modes[RS::SHADER_SPATIAL].functions["post_light"].built_ins["MODEL_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);
 	shader_modes[RS::SHADER_SPATIAL].functions["post_light"].built_ins["VIEW_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);
 	shader_modes[RS::SHADER_SPATIAL].functions["post_light"].built_ins["INV_VIEW_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);
@@ -253,6 +261,7 @@ ShaderTypes::ShaderTypes() {
 	shader_modes[RS::SHADER_SPATIAL].functions["post_light"].built_ins["DIFFUSE_LIGHT_LOWP"] = ShaderLanguage::TYPE_VEC3;
 	shader_modes[RS::SHADER_SPATIAL].functions["post_light"].built_ins["SPECULAR_LIGHT_LOWP"] = ShaderLanguage::TYPE_VEC3;
 	
+	shader_modes[RS::SHADER_SPATIAL].functions["post_light"].built_ins["BANDS"] = constt(ShaderLanguage::TYPE_FLOAT);
 
 
 	shader_modes[RS::SHADER_SPATIAL].functions["post_light"].can_discard = true;

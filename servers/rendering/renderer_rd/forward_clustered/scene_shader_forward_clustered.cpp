@@ -787,6 +787,7 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		// for post light
 	
 		actions.renames["MAX_DIFFUSE_INTENSITY"] = "max_diffuse_intensity";
+		actions.renames["BANDS"] = "bands";
 		actions.renames["AMBIENT_LIGHT"] = "ambient_light";
 		actions.renames["SPECULAR_LIGHT_LOWP"] = "specular_light";
 		actions.renames["DIFFUSE_LIGHT_LOWP"] = "diffuse_light";

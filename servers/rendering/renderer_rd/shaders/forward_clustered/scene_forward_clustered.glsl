@@ -88,6 +88,7 @@ void axis_angle_to_tbn(vec3 axis, float angle, out vec3 tangent, out vec3 binorm
 	normal = omc_axis.zzz * axis + vec3(-s_axis.y, s_axis.x, c);
 }
 
+
 /* Varyings */
 
 layout(location = 0) out vec3 vertex_interp;
@@ -215,6 +216,7 @@ uint multimesh_stride() {
 	stride += sc_multimesh_has_custom_data() ? 1 : 0;
 	return stride;
 }
+
 
 void vertex_shader(vec3 vertex_input,
 #ifdef NORMAL_USED
@@ -535,6 +537,7 @@ void vertex_shader(vec3 vertex_input,
 
 	float max_diffuse_intensity = 0.0;
 	float diffuse_intensity = 0.0;
+
 
 	{ //omni lights
 
@@ -1142,6 +1145,8 @@ vec3 encode24(vec3 v) {
 void fragment_shader(in SceneData scene_data) {
 	uint instance_index = instance_index_interp;
 
+	float bands = 5.0;
+
 #ifdef PREMUL_ALPHA_USED
 	float premul_alpha = 1.0;
 #endif // PREMUL_ALPHA_USED
@@ -1570,6 +1575,8 @@ void fragment_shader(in SceneData scene_data) {
 	/////////////////////// LIGHTING //////////////////////////////
 	float max_diffuse_intensity = 0.0;
 	float  diffuse_intensity = 0.0;
+	
+
 #ifdef NORMAL_USED
 	if (bool(scene_data.flags & SCENE_DATA_FLAGS_USE_ROUGHNESS_LIMITER)) {
 		//https://www.jp.square-enix.com/tech/library/pdf/ImprovedGeometricSpecularAA.pdf
@@ -2507,6 +2514,7 @@ void fragment_shader(in SceneData scene_data) {
 					diffuse_light,
 					max_diffuse_intensity,
 					diffuse_intensity,
+					bands,
 					direct_specular_light);
 		}
 #endif // USE_VERTEX_LIGHTING
@@ -2569,7 +2577,7 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
 #endif
-						diffuse_light, max_diffuse_intensity, diffuse_intensity, direct_specular_light);
+						diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, direct_specular_light);
 			}
 		}
 	}
@@ -2630,7 +2638,7 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
 #endif
-						diffuse_light, max_diffuse_intensity, diffuse_intensity, direct_specular_light);
+						diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, direct_specular_light);
 			}
 		}
 	}
@@ -2857,7 +2865,7 @@ void fragment_shader(in SceneData scene_data) {
 
 	float base_diffuse_intensity = max(diffuse_intensity,0.001);
 
-	float bands = 5.0;
+	// float bands = 5.0;
 	// float offset = 1.0/bands;
 
 	// float stepped_diffuse_intensity = (floor(max_diffuse_intensity * bands) / bands) - offset;
