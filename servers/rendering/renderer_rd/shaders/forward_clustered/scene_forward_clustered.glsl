@@ -534,6 +534,7 @@ void vertex_shader(vec3 vertex_input,
 	uint cluster_z = uint(clamp((-vertex_interp.z / scene_data.z_far) * 32.0, 0.0, 31.0));
 
 	float max_diffuse_intensity = 0.0;
+	float diffuse_intensity = 0.0;
 
 	{ //omni lights
 
@@ -1568,6 +1569,7 @@ void fragment_shader(in SceneData scene_data) {
 #endif //not render depth
 	/////////////////////// LIGHTING //////////////////////////////
 	float max_diffuse_intensity = 0.0;
+	float  diffuse_intensity = 0.0;
 #ifdef NORMAL_USED
 	if (bool(scene_data.flags & SCENE_DATA_FLAGS_USE_ROUGHNESS_LIMITER)) {
 		//https://www.jp.square-enix.com/tech/library/pdf/ImprovedGeometricSpecularAA.pdf
@@ -2504,6 +2506,7 @@ void fragment_shader(in SceneData scene_data) {
 #endif
 					diffuse_light,
 					max_diffuse_intensity,
+					diffuse_intensity,
 					direct_specular_light);
 		}
 #endif // USE_VERTEX_LIGHTING
@@ -2566,7 +2569,7 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
 #endif
-						diffuse_light, max_diffuse_intensity, direct_specular_light);
+						diffuse_light, max_diffuse_intensity, diffuse_intensity, direct_specular_light);
 			}
 		}
 	}
@@ -2627,7 +2630,7 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
 #endif
-						diffuse_light, max_diffuse_intensity, direct_specular_light);
+						diffuse_light, max_diffuse_intensity, diffuse_intensity, direct_specular_light);
 			}
 		}
 	}
@@ -2849,10 +2852,10 @@ void fragment_shader(in SceneData scene_data) {
 	}
 
 #else // !POST_LIGHT_CODE_USED
-	float base_diffuse_intensity = (diffuse_light.x + diffuse_light.y + diffuse_light.z)/3.0;
+	// float base_diffuse_intensity = (diffuse_light.x + diffuse_light.y + diffuse_light.z)/3.0;
 	// float base_diffuse_intensity = dot(diffuse_light,vec3(0.21,0.72,0.07));
 
-	base_diffuse_intensity = max(base_diffuse_intensity,0.01);
+	float base_diffuse_intensity = max(diffuse_intensity,0.001);
 
 	float bands = 5.0;
 	// float offset = 1.0/bands;

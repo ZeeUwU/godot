@@ -78,7 +78,7 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 B, hvec3 T, half anisotropy,
 #endif
-		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout hvec3 specular_light) {
+		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout hvec3 specular_light) {
 #if defined(LIGHT_CODE_USED)
 	// Light is written by the user shader.
 	mat4 inv_view_matrix = scene_data_block.data.inv_view_matrix;
@@ -207,6 +207,7 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 #endif
 			vec3 diffuse_result = light_color * diffuse_brdf_NL * attenuation;
 			diffuse_light += diffuse_result;
+			diffuse_intensity += diffuse_brdf_NL * attenuation;
 			max_diffuse_intensity = max(max_diffuse_intensity, (diffuse_result.x + diffuse_result.y + diffuse_result.z)/3.0);
 
 #if defined(LIGHT_BACKLIGHT_USED)
@@ -448,7 +449,7 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 binormal, hvec3 tangent, half anisotropy,
 #endif
-		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout hvec3 specular_light) {
+		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout hvec3 specular_light) {
 
 	// Omni light attenuation.
 	vec3 light_rel_vec = omni_lights.data[idx].position - vertex;
@@ -713,6 +714,7 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 			diffuse_light,
 			max_diffuse_intensity,
+			diffuse_intensity,
 			specular_light);
 }
 
@@ -748,6 +750,7 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 		inout hvec3 diffuse_light,
 		inout float max_diffuse_intensity,
+		inout float diffuse_intensity,
 		inout hvec3 specular_light) {
 
 	// Spot light attenuation.
@@ -915,7 +918,7 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
 #endif
-			diffuse_light, max_diffuse_intensity, specular_light);
+			diffuse_light, max_diffuse_intensity, diffuse_intensity, specular_light);
 }
 
 void reflection_process(uint ref_index, vec3 vertex, hvec3 ref_vec, hvec3 normal, half roughness, hvec3 ambient_light, hvec3 specular_light, inout hvec4 ambient_accum, inout hvec4 reflection_accum) {
