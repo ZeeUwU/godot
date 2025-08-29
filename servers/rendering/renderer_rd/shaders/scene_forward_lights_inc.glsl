@@ -228,7 +228,10 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 			half mid = half(1.0) - roughness;
 			mid *= mid;
 			half intensity = smoothstep(mid - roughness * half(0.5), mid + roughness * half(0.5), RdotV) * mid;
-			diffuse_light += light_color * intensity * attenuation * specular_amount; // write to diffuse_light, as in toon shading you generally want no reflection
+			vec3 specular_result = light_color * intensity * attenuation * specular_amount;
+			diffuse_light += specular_result; // write to diffuse_light, as in toon shading you generally want no reflection
+			diffuse_intensity += intensity * attenuation * specular_amount;
+			max_diffuse_intensity = max(max_diffuse_intensity, (specular_result.r+specular_result.g+specular_result.b) / 3.0);
 
 #elif defined(SPECULAR_DISABLED)
 			// Do nothing.
