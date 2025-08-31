@@ -2511,6 +2511,9 @@ void fragment_shader(in SceneData scene_data) {
 					binormal,
 					tangent, anisotropy,
 #endif
+#ifdef LIGHT_INDEX_USED
+					i,
+#endif
 					diffuse_light,
 					max_diffuse_intensity,
 					diffuse_intensity,
