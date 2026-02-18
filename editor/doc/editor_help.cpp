@@ -66,7 +66,7 @@
 #include "modules/mono/csharp_script.h"
 #endif
 
-#define CONTRIBUTE_URL vformat("%s/contributing/documentation/updating_the_class_reference.html", GODOT_VERSION_DOCS_URL)
+#define CONTRIBUTE_URL "https://contributing.godotengine.org/en/latest/documentation/class_reference.html"
 
 #ifdef MODULE_MONO_ENABLED
 // Sync with the types mentioned in https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_differences.html
@@ -471,6 +471,10 @@ void EditorHelp::_add_type(const String &p_type, const String &p_enum, bool p_is
 
 void EditorHelp::_add_type_icon(const String &p_type, int p_size, const String &p_fallback) {
 	Ref<Texture2D> icon = EditorNode::get_singleton()->get_class_icon(p_type, p_fallback);
+	if (icon.is_null()) {
+		icon = EditorNode::get_singleton()->get_class_icon("Object");
+		ERR_FAIL_COND(icon.is_null());
+	}
 	Vector2i size = Vector2i(icon->get_width(), icon->get_height());
 	if (p_size > 0) {
 		// Ensures icon scales proportionally on both axes, based on icon height.
@@ -974,7 +978,7 @@ void EditorHelp::_update_doc() {
 	_push_title_font();
 
 	class_desc->add_text(TTR("Class:") + " ");
-	_add_type_icon(edited_class, theme_cache.doc_title_font_size, "Object");
+	_add_type_icon(edited_class, theme_cache.doc_title_font_size, "");
 	class_desc->add_text(nbsp);
 
 	class_desc->push_color(theme_cache.headline_color);
@@ -2321,6 +2325,7 @@ void EditorHelp::_update_doc() {
 			if (!cd.is_script_doc && packed_array_types.has(prop.type)) {
 				class_desc->add_newline();
 				class_desc->add_newline();
+				// See also `EditorHelpBit::parse_symbol()` and `doc/tools/make_rst.py`.
 				_add_text(vformat(TTR("[b]Note:[/b] The returned array is [i]copied[/i] and any changes to it will not update the original property value. See [%s] for more details."), prop.type));
 			}
 
@@ -3104,6 +3109,10 @@ void EditorHelp::load_script_doc_cache() {
 		return;
 	}
 
+	if (EditorNode::is_cmdline_mode()) {
+		return;
+	}
+
 	_wait_for_thread();
 
 	if (!ResourceLoader::exists(get_script_doc_cache_full_path())) {
@@ -3311,6 +3320,12 @@ void EditorHelp::_notification(int p_what) {
 
 		case NOTIFICATION_THEME_CHANGED: {
 			if (is_inside_tree()) {
+				if (is_visible_in_tree()) {
+					_update_doc();
+				} else {
+					update_pending = true;
+				}
+
 				_class_desc_resized(true);
 			}
 			update_toggle_files_button();
@@ -3455,9 +3470,9 @@ EditorHelp::EditorHelp() {
 	status_bar->set_custom_minimum_size(Size2(0, 24 * EDSCALE));
 
 	toggle_files_button = memnew(Button);
+	toggle_files_button->set_theme_type_variation(SceneStringName(FlatButton));
 	toggle_files_button->set_accessibility_name(TTRC("Scripts"));
 	toggle_files_button->set_tooltip_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
-	toggle_files_button->set_flat(true);
 	toggle_files_button->connect(SceneStringName(pressed), callable_mp(this, &EditorHelp::_toggle_files_pressed));
 	status_bar->add_child(toggle_files_button);
 
@@ -4203,9 +4218,63 @@ void EditorHelpBit::_update_labels() {
 	}
 }
 
+void EditorHelpBit::_go_to_url(const String &p_what) {
+	Vector<String> parts;
+	{
+		int from = 0;
+		int buffer_start = 0;
+		while (true) {
+			const int pos = p_what.find_char(':', from);
+			if (pos < 0) {
+				parts.push_back(p_what.substr(buffer_start));
+				break;
+			}
+
+			if (pos + 1 < p_what.length() && p_what[pos + 1] == ':') {
+				// `::` used in built-in scripts.
+				from = pos + 2;
+			} else {
+				parts.push_back(p_what.substr(buffer_start, pos - buffer_start));
+				from = pos + 1;
+				buffer_start = from;
+			}
+		}
+	}
+
+	const String what = parts[0]; // `parts` is always non-empty.
+	const String clss = (parts.size() > 1) ? parts[1].to_lower() : String();
+	const String name = (parts.size() > 2) ? parts[2].to_lower().replace_chars("/_", '-') : String();
+
+	String section = "";
+	if (what == "class_desc") {
+		section = "#description";
+	} else if (what == "class_signal") {
+		section = vformat("#class-%s-signal-%s", clss, name);
+	} else if (what == "class_method" || what == "class_method_desc") {
+		section = vformat("#class-%s-method-%s", clss, name);
+	} else if (what == "class_property") {
+		section = vformat("#class-%s-property-%s", clss, name);
+	} else if (what == "class_enum") {
+		section = vformat("#enum-%s-%s", clss, name);
+	} else if (what == "class_theme_item") {
+		section = vformat("#class-%s-theme-%s", clss, name);
+	} else if (what == "class_constant") {
+		section = vformat("#class-%s-constant-%s", clss, name);
+	} else if (what == "class_annotation") {
+		section = vformat("#%s", clss);
+	}
+
+	String doc_url = clss.is_empty() ? String(GODOT_VERSION_DOCS_URL "/") : vformat(GODOT_VERSION_DOCS_URL "/classes/class_%s.html%s", clss, section);
+	OS::get_singleton()->shell_open(doc_url);
+}
+
 void EditorHelpBit::_go_to_help(const String &p_what) {
-	EditorNode::get_singleton()->get_editor_main_screen()->select(EditorMainScreen::EDITOR_SCRIPT);
-	ScriptEditor::get_singleton()->goto_help(p_what);
+	if (ScriptEditor::get_singleton()) {
+		EditorNode::get_singleton()->get_editor_main_screen()->select(EditorMainScreen::EDITOR_SCRIPT);
+		ScriptEditor::get_singleton()->goto_help(p_what);
+	} else {
+		_go_to_url(p_what);
+	}
 	emit_signal(SNAME("request_hide"));
 }
 
@@ -4354,6 +4423,16 @@ void EditorHelpBit::parse_symbol(const String &p_symbol, const String &p_prologu
 			symbol_hint = SYMBOL_HINT_ASSIGNABLE;
 		}
 		help_data = _get_property_help_data(class_name, item_name);
+
+		// Add copy note to built-in properties returning `Packed*Array`.
+		const DocData::ClassDoc *cd = EditorHelp::get_doc(class_name);
+		if (cd && !cd->is_script_doc && packed_array_types.has(help_data.doc_type.type)) {
+			if (!help_data.description.is_empty()) {
+				help_data.description += "\n";
+			}
+			// See also `EditorHelp::_update_doc()` and `doc/tools/make_rst.py`.
+			help_data.description += vformat(TTR("[b]Note:[/b] The returned array is [i]copied[/i] and any changes to it will not update the original property value. See [%s] for more details."), help_data.doc_type.type);
+		}
 	} else if (item_type == "internal_property") {
 		symbol_type = TTR("Internal Property");
 		help_data.description = "[color=<EditorHelpBitCommentColor>][i]" + TTR("This property can only be set in the Inspector.") + "[/i][/color]";
@@ -4509,11 +4588,11 @@ void EditorHelpBit::update_content_height() {
 	content->set_custom_minimum_size(Size2(content->get_custom_minimum_size().x, CLAMP(content_height, content_min_height, content_max_height)));
 }
 
-EditorHelpBit::EditorHelpBit(const String &p_symbol, const String &p_prologue, bool p_use_class_prefix, bool p_allow_selection) {
+EditorHelpBit::EditorHelpBit(const String &p_symbol, const String &p_prologue, bool p_use_class_prefix, bool p_allow_selection, bool p_in_tooltip) {
 	add_theme_constant_override("separation", 0);
 
 	title = memnew(RichTextLabel);
-	title->set_theme_type_variation("EditorHelpBitTitle");
+	title->set_theme_type_variation(p_in_tooltip ? "EditorHelpBitTooltipTitle" : "EditorHelpBitTitle");
 	title->set_custom_minimum_size(Size2(640 * EDSCALE, 0)); // GH-93031. Set the minimum width even if `fit_content` is true.
 	title->set_fit_content(true);
 	title->set_selection_enabled(p_allow_selection);
@@ -4527,8 +4606,9 @@ EditorHelpBit::EditorHelpBit(const String &p_symbol, const String &p_prologue, b
 	content_max_height = 360 * EDSCALE;
 
 	content = memnew(RichTextLabel);
-	content->set_theme_type_variation("EditorHelpBitContent");
+	content->set_theme_type_variation(p_in_tooltip ? "EditorHelpBitTooltipContent" : "EditorHelpBitContent");
 	content->set_custom_minimum_size(Size2(640 * EDSCALE, content_min_height));
+	content->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	content->set_selection_enabled(p_allow_selection);
 	content->set_context_menu_enabled(p_allow_selection);
 	content->set_selection_modifier(callable_mp_static(_replace_nbsp_with_space));
@@ -4617,7 +4697,7 @@ void EditorHelpBitTooltip::_notification(int p_what) {
 	}
 }
 
-Control *EditorHelpBitTooltip::show_tooltip(Control *p_target, const String &p_symbol, const String &p_prologue, bool p_use_class_prefix) {
+Control *EditorHelpBitTooltip::make_tooltip(Control *p_target, const String &p_symbol, const String &p_prologue, bool p_use_class_prefix) {
 	ERR_FAIL_NULL_V(p_target, _make_invisible_control());
 
 	// Show the custom tooltip only if it is not already visible.
@@ -4627,7 +4707,7 @@ Control *EditorHelpBitTooltip::show_tooltip(Control *p_target, const String &p_s
 		return _make_invisible_control();
 	}
 
-	EditorHelpBit *help_bit = memnew(EditorHelpBit(p_symbol, p_prologue, p_use_class_prefix, false));
+	EditorHelpBit *help_bit = memnew(EditorHelpBit(p_symbol, p_prologue, p_use_class_prefix, false, true));
 
 	EditorHelpBitTooltip *tooltip = memnew(EditorHelpBitTooltip(p_target));
 	help_bit->connect("request_hide", callable_mp(static_cast<Node *>(tooltip), &Node::queue_free));
@@ -4655,32 +4735,34 @@ void EditorHelpBitTooltip::popup_under_cursor() {
 		vr = window->get_usable_parent_rect();
 	}
 
-	if (r.size.x + r.position.x > vr.size.x + vr.position.x) {
-		// Place it in the opposite direction. If it fails, just hug the border.
-		r.position.x = mouse_pos.x - r.size.x - tooltip_offset.x;
+	if (!DisplayServer::get_singleton()->has_feature(DisplayServer::FEATURE_SELF_FITTING_WINDOWS) || is_embedded()) {
+		if (r.size.x + r.position.x > vr.size.x + vr.position.x) {
+			// Place it in the opposite direction. If it fails, just hug the border.
+			r.position.x = mouse_pos.x - r.size.x - tooltip_offset.x;
 
-		if (r.position.x < vr.position.x) {
-			r.position.x = vr.position.x + vr.size.x - r.size.x;
+			if (r.position.x < vr.position.x) {
+				r.position.x = vr.position.x + vr.size.x - r.size.x;
+			}
+		} else if (r.position.x < vr.position.x) {
+			r.position.x = vr.position.x;
 		}
-	} else if (r.position.x < vr.position.x) {
-		r.position.x = vr.position.x;
-	}
 
-	if (r.size.y + r.position.y > vr.size.y + vr.position.y) {
-		// Same as above.
-		r.position.y = mouse_pos.y - r.size.y - tooltip_offset.y;
+		if (r.size.y + r.position.y > vr.size.y + vr.position.y) {
+			// Same as above.
+			r.position.y = mouse_pos.y - r.size.y - tooltip_offset.y;
 
-		if (r.position.y < vr.position.y) {
-			r.position.y = vr.position.y + vr.size.y - r.size.y;
+			if (r.position.y < vr.position.y) {
+				r.position.y = vr.position.y + vr.size.y - r.size.y;
+			}
+		} else if (r.position.y < vr.position.y) {
+			r.position.y = vr.position.y;
 		}
-	} else if (r.position.y < vr.position.y) {
-		r.position.y = vr.position.y;
 	}
 
 	// When `FLAG_POPUP` is false, it prevents the editor from losing focus when displaying the tooltip.
 	// This way, clicks and double-clicks are still available outside the tooltip.
 	set_flag(Window::FLAG_POPUP, false);
-	set_flag(Window::FLAG_NO_FOCUS, !is_embedded());
+	set_flag(Window::FLAG_NO_FOCUS, true);
 	popup(r);
 }
 
@@ -4885,7 +4967,7 @@ FindBar::FindBar() {
 	matches_label->hide();
 
 	find_prev = memnew(Button);
-	find_prev->set_flat(true);
+	find_prev->set_theme_type_variation(SceneStringName(FlatButton));
 	find_prev->set_disabled(results_count < 1);
 	find_prev->set_tooltip_text(TTR("Previous Match"));
 	add_child(find_prev);
@@ -4893,7 +4975,7 @@ FindBar::FindBar() {
 	find_prev->connect(SceneStringName(pressed), callable_mp(this, &FindBar::search_prev));
 
 	find_next = memnew(Button);
-	find_next->set_flat(true);
+	find_next->set_theme_type_variation(SceneStringName(FlatButton));
 	find_next->set_disabled(results_count < 1);
 	find_next->set_tooltip_text(TTR("Next Match"));
 	add_child(find_next);
@@ -4901,11 +4983,11 @@ FindBar::FindBar() {
 	find_next->connect(SceneStringName(pressed), callable_mp(this, &FindBar::search_next));
 
 	hide_button = memnew(Button);
-	hide_button->set_flat(true);
+	hide_button->set_theme_type_variation(SceneStringName(FlatButton));
 	hide_button->set_tooltip_text(TTR("Hide"));
 	hide_button->set_focus_mode(FOCUS_ACCESSIBILITY);
 	hide_button->connect(SceneStringName(pressed), callable_mp(this, &FindBar::_hide_bar));
-	hide_button->set_v_size_flags(SIZE_SHRINK_CENTER);
+	hide_button->set_v_size_flags(SIZE_EXPAND_FILL);
 	add_child(hide_button);
 }
 
@@ -4971,6 +5053,11 @@ bool FindBar::_search(bool p_search_previous) {
 		results_count = 0;
 		results_count_to_current = 0;
 	}
+
+	if (results_count == 1) {
+		rich_text_label->scroll_to_selection();
+	}
+
 	_update_matches_label();
 
 	return ret;
