@@ -214,6 +214,8 @@ public:
 		GDVIRTUAL_CALL(_get_rpc_config, ret);
 		return ret;
 	}
+
+	ScriptExtension() {}
 };
 
 typedef ScriptLanguage::ProfilingInfo ScriptLanguageExtensionProfilingInfo;
@@ -368,7 +370,7 @@ public:
 		return Object::cast_to<Script>(ret);
 	}
 #ifndef DISABLE_DEPRECATED
-	GDVIRTUAL0RC(bool, _has_named_classes)
+	EXBIND0RC(bool, has_named_classes)
 #endif
 	EXBIND0RC(bool, supports_builtin_mode)
 	EXBIND0RC(bool, supports_documentation)
@@ -425,7 +427,6 @@ public:
 						option.matches.push_back(Pair<int, int>(matches[j], matches[j + 1]));
 					}
 				}
-				option.matches_dirty = true;
 				r_options->push_back(option);
 			}
 		}
@@ -458,7 +459,7 @@ public:
 		r_result.description = ret.get("description", "");
 		r_result.is_deprecated = ret.get("is_deprecated", false);
 		r_result.deprecated_message = ret.get("deprecated_message", "");
-		r_result.is_experimental = ret.get("is_experimental", false);
+		r_result.is_deprecated = ret.get("is_deprecated", false);
 		r_result.experimental_message = ret.get("experimental_message", "");
 
 		r_result.doc_type = ret.get("doc_type", "");

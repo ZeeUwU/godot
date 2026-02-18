@@ -61,7 +61,7 @@ SkinReference::~SkinReference() {
 	if (skeleton_node) {
 		skeleton_node->skin_bindings.erase(this);
 	}
-	RS::get_singleton()->free_rid(skeleton);
+	RS::get_singleton()->free(skeleton);
 }
 
 ///////////////////////////////////////
@@ -289,15 +289,13 @@ void Skeleton3D::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 			_process_changed();
-#if !defined(DISABLE_DEPRECATED) && !defined(PHYSICS_3D_DISABLED)
-			setup_simulator();
-#endif // _DISABLE_DEPRECATED && PHYSICS_3D_DISABLED
-		} break;
-		case NOTIFICATION_POST_ENTER_TREE: {
 			_make_dirty();
 			_make_modifiers_dirty();
 			force_update_all_dirty_bones();
-			update_flags |= UPDATE_FLAG_POSE;
+#if !defined(DISABLE_DEPRECATED) && !defined(PHYSICS_3D_DISABLED)
+			setup_simulator();
+#endif // _DISABLE_DEPRECATED && PHYSICS_3D_DISABLED
+			update_flags = UPDATE_FLAG_POSE;
 			_notification(NOTIFICATION_UPDATE_SKELETON);
 		} break;
 #ifdef TOOLS_ENABLED
@@ -317,11 +315,11 @@ void Skeleton3D::_notification(int p_what) {
 			Bone *bonesptr = bones.ptr();
 			int len = bones.size();
 
-			LocalVector<bool> bone_global_pose_dirty_backup;
+			thread_local LocalVector<bool> bone_global_pose_dirty_backup;
 
 			// Process modifiers.
 
-			LocalVector<BonePoseBackup> bones_backup;
+			thread_local LocalVector<BonePoseBackup> bones_backup;
 			_find_modifiers();
 			if (!modifiers.is_empty()) {
 				bones_backup.resize(bones.size());
@@ -931,7 +929,7 @@ void Skeleton3D::_make_dirty() {
 		return;
 	}
 	dirty = true;
-	_update_deferred(modifiers.is_empty() ? UPDATE_FLAG_POSE : (UpdateFlag)(UPDATE_FLAG_POSE | UPDATE_FLAG_MODIFIER));
+	_update_deferred();
 }
 
 void Skeleton3D::_update_deferred(UpdateFlag p_update_flag) {
@@ -942,7 +940,7 @@ void Skeleton3D::_update_deferred(UpdateFlag p_update_flag) {
 			_notification(NOTIFICATION_UPDATE_SKELETON);
 			return;
 		}
-#endif // TOOLS_ENABLED
+#endif //TOOLS_ENABLED
 		if (update_flags == UPDATE_FLAG_NONE && !updating) {
 			notify_deferred_thread_group(NOTIFICATION_UPDATE_SKELETON); // It must never be called more than once in a single frame.
 		}
@@ -1177,7 +1175,7 @@ void Skeleton3D::_process_modifiers() {
 		if (saving && !mod->is_processed_on_saving()) {
 			continue;
 		}
-#endif // TOOLS_ENABLED
+#endif //TOOLS_ENABLED
 		real_t influence = mod->get_influence();
 		if (influence < 1.0) {
 			LocalVector<Transform3D> old_poses;

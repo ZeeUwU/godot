@@ -553,8 +553,7 @@ class EarClip {
 
   // Apply func to each un-clipped vert in a polygon and return an un-clipped
   // vert.
-  template <typename F>
-  VertItrC Loop(VertItr first, F func) const {
+  VertItrC Loop(VertItr first, std::function<void(VertItr)> func) const {
     VertItr v = first;
     do {
       if (Clipped(v)) {

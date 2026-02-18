@@ -301,12 +301,7 @@ void BoneAttachment3D::on_skeleton_update() {
 		if (sk) {
 			if (!override_pose) {
 				if (use_external_skeleton) {
-					if (sk->is_inside_tree()) {
-						set_global_transform(sk->get_global_transform() * sk->get_bone_global_pose(bone_idx));
-						// Else, do nothing, the transform will be set when the skeleton enters the tree:
-						// Skeleton3D::_notification(NOTIFICATION_ENTER_TREE) -> calls Skeleton3D::_notification(NOTIFICATION_UPDATE_SKELETON)
-						// -> emits skeleton_updated signal -> connected to BoneAttachment3D::on_skeleton_update()
-					}
+					set_global_transform(sk->get_global_transform() * sk->get_bone_global_pose(bone_idx));
 				} else {
 					set_transform(sk->get_bone_global_pose(bone_idx));
 				}

@@ -38,6 +38,7 @@ class InputEventConfigContainer : public VBoxContainer {
 	GDCLASS(InputEventConfigContainer, VBoxContainer);
 
 	Label *input_event_text = nullptr;
+	Button *open_config_button = nullptr;
 
 	Ref<InputEvent> input_event;
 	InputEventConfigurationDialog *config_dialog = nullptr;
@@ -46,6 +47,9 @@ class InputEventConfigContainer : public VBoxContainer {
 	void _configure_pressed();
 
 	void _event_changed();
+
+protected:
+	void _notification(int p_what);
 
 public:
 	void set_event(const Ref<InputEvent> &p_event);

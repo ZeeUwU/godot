@@ -11,6 +11,7 @@ if (process && process.env && process.env.npm_command && !fs.existsSync('./platf
 }
 
 const emscriptenGlobals = {
+	'Browser': true,
 	'ERRNO_CODES': true,
 	'FS': true,
 	'GL': true,
@@ -21,7 +22,6 @@ const emscriptenGlobals = {
 	'HEAPU32': true,
 	'IDBFS': true,
 	'LibraryManager': true,
-	'MainLoop': true,
 	'Module': true,
 	'UTF8ToString': true,
 	'UTF8Decoder': true,
@@ -157,7 +157,6 @@ module.exports = [
 				'GodotFS': true,
 				'GodotOS': true,
 				'GodotAudio': true,
-				'GodotInput': true,
 				'GodotRuntime': true,
 				'IDHandler': true,
 				'XRWebGLLayer': true,

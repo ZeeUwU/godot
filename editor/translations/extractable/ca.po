@@ -18,11 +18,8 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.4-dev\n"
 
-msgid "Save"
-msgstr "Desa"
-
-msgid "Clear"
-msgstr "Neteja"
+msgid "All Recognized"
+msgstr "Tots Reconeguts"
 
 msgid "Network"
 msgstr "Xarxa"
@@ -33,11 +30,11 @@ msgstr "Obre"
 msgid "Select Current Folder"
 msgstr "Selecciona el Directori Actual"
 
+msgid "Save"
+msgstr "Desa"
+
 msgid "Select This Folder"
 msgstr "Seleccionar aquest Directori"
-
-msgid "All Recognized"
-msgstr "Tots Reconeguts"
 
 msgid "Open a File"
 msgstr "Obre un Fitxer"
@@ -69,11 +66,11 @@ msgstr "Camí:"
 msgid "Refresh files."
 msgstr "Actualitzar fitxers."
 
-msgid "Directories & Files:"
-msgstr "Directoris i Fitxers:"
-
 msgid "Toggle the visibility of hidden files."
 msgstr "Commutar visibilitat dels fitxers ocults."
+
+msgid "Directories & Files:"
+msgstr "Directoris i Fitxers:"
 
 msgid "File:"
 msgstr "Fitxer:"
@@ -107,6 +104,9 @@ msgstr "Enganxa"
 
 msgid "Select All"
 msgstr "Selecciona-ho Tot"
+
+msgid "Clear"
+msgstr "Neteja"
 
 msgid "Undo"
 msgstr "Desfés"

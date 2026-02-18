@@ -41,12 +41,7 @@
 #define environ (*_NSGetEnviron())
 #elif defined(SDL_PLATFORM_FREEBSD)
 #include <dlfcn.h>
-static char **get_environ_rtld(void)
-{
-    char ***environ_rtld = (char ***)dlsym(RTLD_DEFAULT, "environ");
-    return environ_rtld ? *environ_rtld : NULL;
-}
-#define environ (get_environ_rtld())
+#define environ ((char **)dlsym(RTLD_DEFAULT, "environ"))
 #else
 extern char **environ;
 #endif
@@ -55,9 +50,6 @@ extern char **environ;
 static char **environ;
 #endif
 
-#if defined(SDL_PLATFORM_LINUX) || defined(SDL_PLATFORM_MACOS) || defined(SDL_PLATFORM_FREEBSD)
-#include <stdlib.h>
-#endif
 
 struct SDL_Environment
 {
@@ -157,9 +149,6 @@ SDL_Environment *SDL_CreateEnvironment(bool populated)
 
 const char *SDL_GetEnvironmentVariable(SDL_Environment *env, const char *name)
 {
-#if defined(SDL_PLATFORM_LINUX) || defined(SDL_PLATFORM_MACOS) || defined(SDL_PLATFORM_FREEBSD)
-    return getenv(name);
-#else
     const char *result = NULL;
 
     if (!env) {
@@ -179,7 +168,6 @@ const char *SDL_GetEnvironmentVariable(SDL_Environment *env, const char *name)
     SDL_UnlockMutex(env->lock);
 
     return result;
-#endif
 }
 
 typedef struct CountEnvStringsData
@@ -258,9 +246,6 @@ char **SDL_GetEnvironmentVariables(SDL_Environment *env)
 
 bool SDL_SetEnvironmentVariable(SDL_Environment *env, const char *name, const char *value, bool overwrite)
 {
-#if defined(SDL_PLATFORM_LINUX) || defined(SDL_PLATFORM_MACOS) || defined(SDL_PLATFORM_FREEBSD)
-    return setenv(name, value, overwrite);
-#else
     bool result = false;
 
     if (!env) {
@@ -296,14 +281,10 @@ bool SDL_SetEnvironmentVariable(SDL_Environment *env, const char *name, const ch
     SDL_UnlockMutex(env->lock);
 
     return result;
-#endif
 }
 
 bool SDL_UnsetEnvironmentVariable(SDL_Environment *env, const char *name)
 {
-#if defined(SDL_PLATFORM_LINUX) || defined(SDL_PLATFORM_MACOS) || defined(SDL_PLATFORM_FREEBSD)
-    return unsetenv(name);
-#else
     bool result = false;
 
     if (!env) {
@@ -324,7 +305,6 @@ bool SDL_UnsetEnvironmentVariable(SDL_Environment *env, const char *name)
     SDL_UnlockMutex(env->lock);
 
     return result;
-#endif
 }
 
 void SDL_DestroyEnvironment(SDL_Environment *env)

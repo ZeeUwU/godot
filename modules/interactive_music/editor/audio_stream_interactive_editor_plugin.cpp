@@ -183,13 +183,13 @@ void AudioStreamInteractiveTransitionEditor::_update_transitions() {
 			if (!exists) {
 				if (audio_stream_interactive->has_transition(AudioStreamInteractive::CLIP_ANY, to)) {
 					from = AudioStreamInteractive::CLIP_ANY;
-					tooltip = vformat(TTR(U"Using any clip → %s."), audio_stream_interactive->get_clip_name(to));
+					tooltip = vformat(TTR("Using Any Clip -> %s."), audio_stream_interactive->get_clip_name(to));
 				} else if (audio_stream_interactive->has_transition(from, AudioStreamInteractive::CLIP_ANY)) {
 					to = AudioStreamInteractive::CLIP_ANY;
-					tooltip = vformat(TTR(U"Using %s → Any clip."), audio_stream_interactive->get_clip_name(from));
+					tooltip = vformat(TTR("Using %s -> Any Clip."), audio_stream_interactive->get_clip_name(from));
 				} else if (audio_stream_interactive->has_transition(AudioStreamInteractive::CLIP_ANY, AudioStreamInteractive::CLIP_ANY)) {
 					from = to = AudioStreamInteractive::CLIP_ANY;
-					tooltip = TTR(U"Using all clips → Any clip.");
+					tooltip = TTR("Using All Clips -> Any Clip.");
 				} else {
 					tooltip = TTR("No transition available.");
 				}
@@ -402,7 +402,8 @@ void EditorInspectorPluginAudioStreamInteractive::_edit(Object *p_object) {
 
 void EditorInspectorPluginAudioStreamInteractive::parse_end(Object *p_object) {
 	if (Object::cast_to<AudioStreamInteractive>(p_object)) {
-		Button *button = memnew(EditorInspectorActionButton(TTRC("Edit Transitions"), SNAME("Blend")));
+		Button *button = EditorInspector::create_inspector_action_button(TTR("Edit Transitions"));
+		button->set_button_icon(audio_stream_interactive_transition_editor->get_editor_theme_icon(SNAME("Blend")));
 		button->connect(SceneStringName(pressed), callable_mp(this, &EditorInspectorPluginAudioStreamInteractive::_edit).bind(p_object));
 		add_custom_control(button);
 	}

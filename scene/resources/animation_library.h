@@ -30,7 +30,6 @@
 
 #pragma once
 
-#include "core/templates/rb_map.h"
 #include "core/variant/typed_array.h"
 #include "scene/resources/animation.h"
 
@@ -45,7 +44,7 @@ class AnimationLibrary : public Resource {
 	void _animation_changed(const StringName &p_name);
 
 	friend class AnimationMixer; // For faster access.
-	RBMap<StringName, Ref<Animation>, StringName::AlphCompare> animations;
+	HashMap<StringName, Ref<Animation>> animations;
 
 protected:
 	static void _bind_methods();

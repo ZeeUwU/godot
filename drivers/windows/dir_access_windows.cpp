@@ -329,14 +329,7 @@ Error DirAccessWindows::remove(String p_path) {
 
 uint64_t DirAccessWindows::get_space_left() {
 	uint64_t bytes = 0;
-
-	String path = fix_path(current_dir);
-
-	if (!path.ends_with("\\")) {
-		path += "\\";
-	}
-
-	if (!GetDiskFreeSpaceExW((LPCWSTR)(path.utf16().get_data()), (PULARGE_INTEGER)&bytes, nullptr, nullptr)) {
+	if (!GetDiskFreeSpaceEx(nullptr, (PULARGE_INTEGER)&bytes, nullptr, nullptr)) {
 		return 0;
 	}
 

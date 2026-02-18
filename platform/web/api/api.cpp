@@ -54,7 +54,7 @@ JavaScriptBridge *JavaScriptBridge::get_singleton() {
 }
 
 JavaScriptBridge::JavaScriptBridge() {
-	ERR_FAIL_COND_MSG(singleton != nullptr, "JavaScriptBridge singleton already exists.");
+	ERR_FAIL_COND_MSG(singleton != nullptr, "JavaScriptBridge singleton already exist.");
 	singleton = this;
 }
 

@@ -41,7 +41,6 @@
 #include "editor/editor_string_names.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "editor/file_system/editor_paths.h"
-#include "editor/gui/editor_toaster.h"
 #include "editor/inspector/editor_properties.h"
 #include "editor/inspector/editor_properties_vector.h"
 #include "editor/scene/curve_editor_plugin.h"
@@ -71,7 +70,7 @@
 #include "scene/resources/style_box_flat.h"
 #include "scene/resources/visual_shader_nodes.h"
 #include "scene/resources/visual_shader_particle_nodes.h"
-#include "servers/display/display_server.h"
+#include "servers/display_server.h"
 #include "servers/rendering/shader_preprocessor.h"
 #include "servers/rendering/shader_types.h"
 
@@ -92,7 +91,7 @@ static FloatConstantDef float_constant_defs[] = {
 	{ "Sqrt2", Math::SQRT2, TTRC("Sqrt2 constant (1.414214). Square root of 2.") }
 };
 
-constexpr int MAX_FLOAT_CONST_DEFS = std_size(float_constant_defs);
+constexpr int MAX_FLOAT_CONST_DEFS = std::size(float_constant_defs);
 
 ///////////////////
 
@@ -539,7 +538,7 @@ void VisualShaderGraphPlugin::update_frames(VisualShader::Type p_type, int p_nod
 
 void VisualShaderGraphPlugin::set_node_position(VisualShader::Type p_type, int p_id, const Vector2 &p_position) {
 	if (editor->get_current_shader_type() == p_type && links.has(p_id)) {
-		links[p_id].graph_element->set_position_offset(p_position * editor->cached_theme_base_scale);
+		links[p_id].graph_element->set_position_offset(p_position);
 	}
 }
 
@@ -573,7 +572,7 @@ void VisualShaderGraphPlugin::update_theme() {
 	Ref<Font> label_bold_font = EditorNode::get_singleton()->get_editor_theme()->get_font("main_bold_msdf", EditorStringName(EditorFonts));
 	vs_msdf_fonts_theme->set_font(SceneStringName(font), "Label", label_font);
 	vs_msdf_fonts_theme->set_font(SceneStringName(font), "GraphNodeTitleLabel", label_bold_font);
-	if (!EditorThemeManager::is_dark_icon_and_font()) {
+	if (!EditorThemeManager::is_dark_theme()) {
 		// Override the color to white for light themes.
 		vs_msdf_fonts_theme->set_color(SceneStringName(font_color), "GraphNodeTitleLabel", Color(1, 1, 1));
 	}
@@ -736,7 +735,7 @@ void VisualShaderGraphPlugin::add_node(VisualShader::Type p_type, int p_id, bool
 		expression = expression_node->get_expression();
 	}
 
-	node->set_position_offset(visual_shader->get_node_position(p_type, p_id) * editor->cached_theme_base_scale);
+	node->set_position_offset(visual_shader->get_node_position(p_type, p_id));
 
 	node->connect("dragged", callable_mp(editor, &VisualShaderEditor::_node_dragged).bind(p_id));
 
@@ -1057,9 +1056,7 @@ void VisualShaderGraphPlugin::add_node(VisualShader::Type p_type, int p_id, bool
 		}
 
 		if (vsnode->is_port_separator(i)) {
-			HSeparator *separator = memnew(HSeparator);
-			separator->add_theme_style_override("separator", editor->get_theme_stylebox("separator", "GraphNode"));
-			node->add_child(separator);
+			node->add_child(memnew(HSeparator));
 			port_offset++;
 		}
 
@@ -1178,7 +1175,7 @@ void VisualShaderGraphPlugin::add_node(VisualShader::Type p_type, int p_id, bool
 				if (is_group) {
 					Button *remove_btn = memnew(Button);
 					remove_btn->set_button_icon(EditorNode::get_singleton()->get_editor_theme()->get_icon(SNAME("Remove"), EditorStringName(EditorIcons)));
-					remove_btn->set_tooltip_text(TTR("Remove") + " " + name_right);
+					remove_btn->set_tooltip_text(TTR("Remove") + " " + name_left);
 					remove_btn->connect(SceneStringName(pressed), callable_mp(editor, &VisualShaderEditor::_remove_output_port).bind(p_id, i), CONNECT_DEFERRED);
 					hb->add_child(remove_btn);
 
@@ -1388,13 +1385,9 @@ void VisualShaderGraphPlugin::add_node(VisualShader::Type p_type, int p_id, bool
 		expression_node->set_ctrl_pressed(expression_box, 0);
 		expression_box->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 		node->add_child(expression_box);
-
-		Control *offset2 = memnew(Control);
-		offset2->set_custom_minimum_size(Vector2(0, 11 * EDSCALE));
-		node->add_child(offset2);
-
 		register_expression_edit(p_id, expression_box);
 
+		Color background_color = EDITOR_GET("text_editor/theme/highlighting/background_color");
 		Color text_color = EDITOR_GET("text_editor/theme/highlighting/text_color");
 		Color keyword_color = EDITOR_GET("text_editor/theme/highlighting/keyword_color");
 		Color control_flow_keyword_color = EDITOR_GET("text_editor/theme/highlighting/control_flow_keyword_color");
@@ -1405,6 +1398,7 @@ void VisualShaderGraphPlugin::add_node(VisualShader::Type p_type, int p_id, bool
 		Color members_color = EDITOR_GET("text_editor/theme/highlighting/member_variable_color");
 
 		expression_box->set_syntax_highlighter(expression_syntax_highlighter);
+		expression_box->add_theme_color_override("background_color", background_color);
 
 		for (const String &E : editor->keyword_list) {
 			if (ShaderLanguage::is_control_flow_keyword(E)) {
@@ -1566,12 +1560,6 @@ void VisualShaderEditor::edit_shader(const Ref<Shader> &p_shader) {
 	}
 }
 
-void VisualShaderEditor::use_menu_bar(MenuButton *p_file_menu) {
-	p_file_menu->set_switch_on_hover(false);
-	toolbar_hflow->add_child(p_file_menu);
-	toolbar_hflow->move_child(p_file_menu, 2); // Toggle Files Panel button + separator.
-}
-
 void VisualShaderEditor::apply_shaders() {
 	// Stub. TODO: Implement apply_shaders in visual shaders for parity with text shaders.
 }
@@ -1620,6 +1608,10 @@ void VisualShaderEditor::set_current_shader_type(VisualShader::Type p_type) {
 
 VisualShader::Type VisualShaderEditor::get_current_shader_type() const {
 	return current_type;
+}
+
+Control *VisualShaderEditor::get_top_bar() {
+	return toolbar;
 }
 
 void VisualShaderEditor::add_plugin(const Ref<VisualShaderNodePlugin> &p_plugin) {
@@ -1672,7 +1664,7 @@ void VisualShaderEditor::add_custom_type(const String &p_name, const String &p_t
 	ao.is_native = !p_type.is_empty();
 
 	bool begin = false;
-	String root = p_category.get_slicec('/', 0);
+	String root = p_category.split("/")[0];
 
 	for (int i = 0; i < add_options.size(); i++) {
 		if (add_options[i].is_custom) {
@@ -1718,20 +1710,20 @@ void VisualShaderEditor::_get_current_mode_limits(int &r_begin_type, int &r_end_
 	switch (visual_shader->get_mode()) {
 		case Shader::MODE_CANVAS_ITEM:
 		case Shader::MODE_SPATIAL: {
-			r_begin_type = VisualShader::TYPE_VERTEX;
-			r_end_type = VisualShader::TYPE_START;
+			r_begin_type = 0;
+			r_end_type = 3;
 		} break;
 		case Shader::MODE_PARTICLES: {
-			r_begin_type = VisualShader::TYPE_START;
-			r_end_type = VisualShader::TYPE_SKY;
+			r_begin_type = 3;
+			r_end_type = 5 + r_begin_type;
 		} break;
 		case Shader::MODE_SKY: {
-			r_begin_type = VisualShader::TYPE_SKY;
-			r_end_type = VisualShader::TYPE_FOG;
+			r_begin_type = 8;
+			r_end_type = 1 + r_begin_type;
 		} break;
 		case Shader::MODE_FOG: {
-			r_begin_type = VisualShader::TYPE_FOG;
-			r_end_type = VisualShader::TYPE_MAX;
+			r_begin_type = 9;
+			r_end_type = 1 + r_begin_type;
 		} break;
 		default: {
 		} break;
@@ -2163,12 +2155,12 @@ void VisualShaderEditor::_update_nodes() {
 
 	// Add GDScript classes.
 	{
-		LocalVector<StringName> class_list;
-		ScriptServer::get_global_class_list(class_list);
+		List<StringName> class_list;
+		ScriptServer::get_global_class_list(&class_list);
 
-		for (const StringName &class_name : class_list) {
-			if (ScriptServer::get_global_class_native_base(class_name) == "VisualShaderNodeCustom") {
-				String script_path = ScriptServer::get_global_class_path(class_name);
+		for (const StringName &E : class_list) {
+			if (ScriptServer::get_global_class_native_base(E) == "VisualShaderNodeCustom") {
+				String script_path = ScriptServer::get_global_class_path(E);
 				Ref<Resource> res = ResourceLoader::load(script_path);
 				ERR_CONTINUE(res.is_null());
 				ERR_CONTINUE(!res->is_class("Script"));
@@ -2193,19 +2185,19 @@ void VisualShaderEditor::_update_nodes() {
 
 	// Add GDExtension classes.
 	{
-		LocalVector<StringName> class_list;
-		ClassDB::get_class_list(class_list);
+		List<StringName> class_list;
+		ClassDB::get_class_list(&class_list);
 
-		for (const StringName &class_name : class_list) {
-			if (ClassDB::get_parent_class(class_name) == "VisualShaderNodeCustom") {
-				Object *instance = ClassDB::instantiate(class_name);
+		for (const StringName &E : class_list) {
+			if (ClassDB::get_parent_class(E) == "VisualShaderNodeCustom") {
+				Object *instance = ClassDB::instantiate(E);
 				Ref<VisualShaderNodeCustom> ref = Object::cast_to<VisualShaderNodeCustom>(instance);
 				ERR_CONTINUE(ref.is_null());
 				if (!ref->is_available(visual_shader->get_mode(), get_current_shader_type())) {
 					continue;
 				}
 				Dictionary dict = get_custom_node_data(ref);
-				dict["type"] = class_name;
+				dict["type"] = E;
 				dict["script"] = Ref<Script>();
 
 				String key;
@@ -2508,30 +2500,8 @@ void VisualShaderEditor::_set_mode(int p_which) {
 
 	const String id_string = _get_cache_id_string();
 
-	int default_type = VisualShader::TYPE_VERTEX;
-	int upper_type = VisualShader::TYPE_START;
-	if (mode & MODE_FLAGS_PARTICLES) {
-		default_type = VisualShader::TYPE_START;
-		upper_type = VisualShader::TYPE_SKY;
-	} else if (mode & MODE_FLAGS_SKY) {
-		default_type = VisualShader::TYPE_SKY;
-		upper_type = VisualShader::TYPE_FOG;
-	} else if (mode & MODE_FLAGS_FOG) {
-		default_type = VisualShader::TYPE_FOG;
-		upper_type = VisualShader::TYPE_MAX;
-	}
-
-	int saved_type = vs_editor_cache->get_value(id_string, "edited_type", default_type);
-	if (saved_type >= upper_type || saved_type < default_type) {
-		saved_type = default_type;
-	}
-
-	if (mode & MODE_FLAGS_PARTICLES && saved_type - default_type >= 3) {
-		edit_type->select(saved_type - default_type - 3);
-		custom_mode_box->set_pressed(true);
-	} else {
-		edit_type->select(saved_type - default_type);
-	}
+	int saved_type = vs_editor_cache->get_value(id_string, "edited_type", 0);
+	edit_type->select(saved_type);
 	set_current_shader_type((VisualShader::Type)saved_type);
 }
 
@@ -2631,10 +2601,6 @@ void VisualShaderEditor::_update_parameter_refs(HashSet<String> &p_deleted_names
 
 void VisualShaderEditor::_update_graph() {
 	if (visual_shader.is_null()) {
-		return;
-	}
-
-	if (!is_inside_tree()) {
 		return;
 	}
 
@@ -3768,17 +3734,6 @@ void VisualShaderEditor::_setup_node(VisualShaderNode *p_node, const Vector<Vari
 			remap_func->set_op_type((VisualShaderNodeRemap::OpType)(int)p_ops[0]);
 		}
 	}
-
-	// REFRACT
-	{
-		VisualShaderNodeVectorRefract *refract = Object::cast_to<VisualShaderNodeVectorRefract>(p_node);
-
-		if (refract) {
-			ERR_FAIL_COND(p_ops[0].get_type() != Variant::INT);
-			refract->set_op_type((VisualShaderNodeVectorRefract::OpType)(int)p_ops[0]);
-			return;
-		}
-	}
 }
 
 void VisualShaderEditor::_add_node(int p_idx, const Vector<Variant> &p_ops, const String &p_resource_path, int p_node_idx) {
@@ -3860,7 +3815,6 @@ void VisualShaderEditor::_add_node(int p_idx, const Vector<Variant> &p_ops, cons
 		position /= EDSCALE;
 	}
 	position /= graph->get_zoom();
-	position /= cached_theme_base_scale;
 	saved_node_pos_dirty = false;
 
 	int id_to_use = visual_shader->get_valid_node_id(type);
@@ -4187,7 +4141,7 @@ void VisualShaderEditor::_update_varyings() {
 
 void VisualShaderEditor::_node_dragged(const Vector2 &p_from, const Vector2 &p_to, int p_node) {
 	VisualShader::Type type = get_current_shader_type();
-	drag_buffer.push_back({ type, p_node, p_from / cached_theme_base_scale, p_to / cached_theme_base_scale });
+	drag_buffer.push_back({ type, p_node, p_from, p_to });
 	if (!drag_dirty) {
 		callable_mp(this, &VisualShaderEditor::_nodes_dragged).call_deferred();
 	}
@@ -5261,6 +5215,10 @@ void VisualShaderEditor::_help_open() {
 
 void VisualShaderEditor::_notification(int p_what) {
 	switch (p_what) {
+		case NOTIFICATION_POSTINITIALIZE: {
+			_update_options_menu();
+		} break;
+
 		case EditorSettings::NOTIFICATION_EDITOR_SETTINGS_CHANGED: {
 			if (EditorSettings::get_singleton()->check_changed_settings_in_group("editors/panning")) {
 				graph->get_panner()->setup((ViewPanner::ControlScheme)EDITOR_GET("editors/panning/sub_editors_panning_scheme").operator int(), ED_GET_SHORTCUT("canvas_item_editor/pan_view"), bool(EDITOR_GET("editors/panning/simple_panning")));
@@ -5297,7 +5255,7 @@ void VisualShaderEditor::_notification(int p_what) {
 
 		case NOTIFICATION_THEME_CHANGED: {
 			site_search->set_button_icon(get_editor_theme_icon(SNAME("ExternalLink")));
-			highend_label->add_theme_color_override(SceneStringName(font_color), get_theme_color(SNAME("warning_color"), EditorStringName(Editor)));
+			highend_label->set_modulate(get_theme_color(SNAME("highend_color"), EditorStringName(Editor)));
 
 			param_filter->set_right_icon(Control::get_editor_theme_icon(SNAME("Search")));
 			node_filter->set_right_icon(Control::get_editor_theme_icon(SNAME("Search")));
@@ -5306,6 +5264,7 @@ void VisualShaderEditor::_notification(int p_what) {
 			shader_preview_button->set_button_icon(Control::get_editor_theme_icon(SNAME("SubViewport")));
 
 			{
+				Color background_color = EDITOR_GET("text_editor/theme/highlighting/background_color");
 				Color text_color = EDITOR_GET("text_editor/theme/highlighting/text_color");
 				Color keyword_color = EDITOR_GET("text_editor/theme/highlighting/keyword_color");
 				Color control_flow_keyword_color = EDITOR_GET("text_editor/theme/highlighting/control_flow_keyword_color");
@@ -5316,6 +5275,7 @@ void VisualShaderEditor::_notification(int p_what) {
 				Color members_color = EDITOR_GET("text_editor/theme/highlighting/member_variable_color");
 				Color error_color = get_theme_color(SNAME("error_color"), EditorStringName(Editor));
 
+				preview_text->add_theme_color_override("background_color", background_color);
 				varying_error_label->add_theme_color_override(SceneStringName(font_color), error_color);
 
 				for (const String &E : keyword_list) {
@@ -5355,23 +5315,14 @@ void VisualShaderEditor::_notification(int p_what) {
 			tools->set_button_icon(get_editor_theme_icon(SNAME("Tools")));
 			preview_tools->set_button_icon(get_editor_theme_icon(SNAME("Tools")));
 
-			cached_theme_base_scale = get_theme_default_base_scale();
-
 			if (is_visible_in_tree()) {
 				_update_graph();
-			} else {
-				theme_dirty = true;
 			}
 			update_toggle_files_button();
-			_update_options_menu();
 		} break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED: {
 			update_toggle_files_button();
-			if (theme_dirty && is_visible_in_tree()) {
-				theme_dirty = false;
-				_update_graph();
-			}
 		} break;
 
 		case NOTIFICATION_DRAG_BEGIN: {
@@ -5661,9 +5612,9 @@ void VisualShaderEditor::_paste_nodes(bool p_use_custom_position, const Vector2 
 }
 
 void VisualShaderEditor::_type_selected(int p_id) {
-	int offset = VisualShader::TYPE_VERTEX;
+	int offset = 0;
 	if (mode & MODE_FLAGS_PARTICLES) {
-		offset = VisualShader::TYPE_START;
+		offset = 3;
 		if (p_id + offset > VisualShader::TYPE_PROCESS) {
 			custom_mode_box->set_visible(false);
 			custom_mode_enabled = false;
@@ -5675,16 +5626,16 @@ void VisualShaderEditor::_type_selected(int p_id) {
 			}
 		}
 	} else if (mode & MODE_FLAGS_SKY) {
-		offset = VisualShader::TYPE_SKY;
+		offset = 8;
 	} else if (mode & MODE_FLAGS_FOG) {
-		offset = VisualShader::TYPE_FOG;
+		offset = 9;
 	}
 
 	set_current_shader_type(VisualShader::Type(p_id + offset));
 	_update_nodes();
 	_update_graph();
 
-	graph->grab_focus(true);
+	graph->grab_focus();
 }
 
 void VisualShaderEditor::_custom_mode_toggled(bool p_enabled) {
@@ -6026,7 +5977,7 @@ void VisualShaderEditor::_varying_validate() {
 		error += TTR("Invalid name for varying.");
 		has_error = true;
 	} else if (visual_shader->has_varying(varname)) {
-		error += TTR("Varying with that name already exists.");
+		error += TTR("Varying with that name is already exist.");
 		has_error = true;
 	}
 
@@ -6034,7 +5985,7 @@ void VisualShaderEditor::_varying_validate() {
 		if (has_error) {
 			error += "\n";
 		}
-		error += vformat(TTR("Boolean type cannot be used with `%s` varying mode."), U"Vertex → [Fragment, Light]");
+		error += vformat(TTR("Boolean type cannot be used with `%s` varying mode."), "Vertex -> [Fragment, Light]");
 		has_error = true;
 	}
 
@@ -6484,8 +6435,8 @@ void VisualShaderEditor::_show_shader_preview() {
 	}
 }
 
-void VisualShaderEditor::set_toggle_list_control(Control *p_toggle_list_control) {
-	toggle_files_list = p_toggle_list_control;
+void VisualShaderEditor::set_toggle_list_control(Control *p_control) {
+	toggle_files_list = p_control;
 }
 
 void VisualShaderEditor::_toggle_files_pressed() {
@@ -6634,7 +6585,7 @@ VisualShaderEditor::VisualShaderEditor() {
 	toolbar_panel->set_anchors_and_offsets_preset(Control::PRESET_TOP_WIDE, PRESET_MODE_MINSIZE, 10);
 	toolbar_panel->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
 
-	toolbar_hflow = memnew(HFlowContainer);
+	toolbar = memnew(HFlowContainer);
 	{
 		LocalVector<Node *> nodes;
 		for (int i = 0; i < graph->get_menu_hbox()->get_child_count(); i++) {
@@ -6644,16 +6595,16 @@ VisualShaderEditor::VisualShaderEditor() {
 
 		for (Node *node : nodes) {
 			graph->get_menu_hbox()->remove_child(node);
-			toolbar_hflow->add_child(node);
+			toolbar->add_child(node);
 		}
 
 		graph->get_menu_hbox()->hide();
-		toolbar_panel->add_child(toolbar_hflow);
+		toolbar_panel->add_child(toolbar);
 	}
 
 	VSeparator *vs = memnew(VSeparator);
-	toolbar_hflow->add_child(vs);
-	toolbar_hflow->move_child(vs, 0);
+	toolbar->add_child(vs);
+	toolbar->move_child(vs, 0);
 
 	custom_mode_box = memnew(CheckBox);
 	custom_mode_box->set_text(TTR("Custom"));
@@ -6687,33 +6638,31 @@ VisualShaderEditor::VisualShaderEditor() {
 
 	edit_type = edit_type_standard;
 
-	toolbar_hflow->add_child(custom_mode_box);
-	toolbar_hflow->move_child(custom_mode_box, 0);
-	toolbar_hflow->add_child(edit_type_standard);
-	toolbar_hflow->move_child(edit_type_standard, 0);
-	toolbar_hflow->add_child(edit_type_particles);
-	toolbar_hflow->move_child(edit_type_particles, 0);
-	toolbar_hflow->add_child(edit_type_sky);
-	toolbar_hflow->move_child(edit_type_sky, 0);
-	toolbar_hflow->add_child(edit_type_fog);
-	toolbar_hflow->move_child(edit_type_fog, 0);
+	toolbar->add_child(custom_mode_box);
+	toolbar->move_child(custom_mode_box, 0);
+	toolbar->add_child(edit_type_standard);
+	toolbar->move_child(edit_type_standard, 0);
+	toolbar->add_child(edit_type_particles);
+	toolbar->move_child(edit_type_particles, 0);
+	toolbar->add_child(edit_type_sky);
+	toolbar->move_child(edit_type_sky, 0);
+	toolbar->add_child(edit_type_fog);
+	toolbar->move_child(edit_type_fog, 0);
 
 	add_node = memnew(Button);
-	add_node->set_theme_type_variation(SceneStringName(FlatButton));
+	add_node->set_flat(true);
 	add_node->set_text(TTR("Add Node..."));
-	toolbar_hflow->add_child(add_node);
-	toolbar_hflow->move_child(add_node, 0);
+	toolbar->add_child(add_node);
+	toolbar->move_child(add_node, 0);
 	add_node->connect(SceneStringName(pressed), callable_mp(this, &VisualShaderEditor::_show_members_dialog).bind(false, VisualShaderNode::PORT_TYPE_MAX, VisualShaderNode::PORT_TYPE_MAX));
 
 	graph->connect("graph_elements_linked_to_frame_request", callable_mp(this, &VisualShaderEditor::_nodes_linked_to_frame_request));
 	graph->connect("frame_rect_changed", callable_mp(this, &VisualShaderEditor::_frame_rect_changed));
 
 	varying_button = memnew(MenuButton);
-	varying_button->set_flat(false);
-	varying_button->set_theme_type_variation("FlatMenuButton");
 	varying_button->set_text(TTR("Manage Varyings"));
 	varying_button->set_switch_on_hover(true);
-	toolbar_hflow->add_child(varying_button);
+	toolbar->add_child(varying_button);
 
 	PopupMenu *varying_menu = varying_button->get_popup();
 	varying_menu->add_item(TTR("Add Varying"), int(VaryingMenuOptions::ADD));
@@ -6724,7 +6673,7 @@ VisualShaderEditor::VisualShaderEditor() {
 	code_preview_button->set_theme_type_variation(SceneStringName(FlatButton));
 	code_preview_button->set_toggle_mode(true);
 	code_preview_button->set_tooltip_text(TTR("Show generated shader code."));
-	toolbar_hflow->add_child(code_preview_button);
+	toolbar->add_child(code_preview_button);
 	code_preview_button->connect(SceneStringName(pressed), callable_mp(this, &VisualShaderEditor::_show_preview_text));
 
 	shader_preview_button = memnew(Button);
@@ -6732,33 +6681,34 @@ VisualShaderEditor::VisualShaderEditor() {
 	shader_preview_button->set_toggle_mode(true);
 	shader_preview_button->set_tooltip_text(TTR("Toggle shader preview."));
 	shader_preview_button->set_pressed(true);
-	toolbar_hflow->add_child(shader_preview_button);
+	toolbar->add_child(shader_preview_button);
 	shader_preview_button->connect(SceneStringName(pressed), callable_mp(this, &VisualShaderEditor::_show_shader_preview));
 
 	Control *spacer = memnew(Control);
 	spacer->set_h_size_flags(Control::SIZE_EXPAND);
-	toolbar_hflow->add_child(spacer);
+	toolbar->add_child(spacer);
 
 	site_search = memnew(Button);
-	site_search->set_theme_type_variation(SceneStringName(FlatButton));
+	site_search->set_flat(true);
 	site_search->connect(SceneStringName(pressed), callable_mp(this, &VisualShaderEditor::_help_open));
 	site_search->set_text(TTR("Online Docs"));
 	site_search->set_tooltip_text(TTR("Open Godot online documentation."));
-	toolbar_hflow->add_child(site_search);
+	toolbar->add_child(site_search);
+	toolbar->add_child(memnew(VSeparator));
 
 	VSeparator *separator = memnew(VSeparator);
-	toolbar_hflow->add_child(separator);
-	toolbar_hflow->move_child(separator, 0);
+	toolbar->add_child(separator);
+	toolbar->move_child(separator, 0);
 
 	separator = memnew(VSeparator);
-	toolbar_hflow->add_child(separator);
-	toolbar_hflow->move_child(separator, 0);
+	toolbar->add_child(separator);
+	toolbar->move_child(separator, 0);
 
 	toggle_files_button = memnew(Button);
-	toggle_files_button->set_theme_type_variation(SceneStringName(FlatButton));
+	toggle_files_button->set_flat(true);
 	toggle_files_button->connect(SceneStringName(pressed), callable_mp(this, &VisualShaderEditor::_toggle_files_pressed));
-	toolbar_hflow->add_child(toggle_files_button);
-	toolbar_hflow->move_child(toggle_files_button, 0);
+	toolbar->add_child(toggle_files_button);
+	toolbar->move_child(toggle_files_button, 0);
 
 	///////////////////////////////////////
 	// CODE PREVIEW
@@ -6943,9 +6893,9 @@ VisualShaderEditor::VisualShaderEditor() {
 	highend_label->set_focus_mode(Control::FOCUS_ACCESSIBILITY);
 	desc_hbox->add_child(highend_label);
 	highend_label->set_visible(false);
-	highend_label->set_text(TTRC("Forward+/Mobile"));
+	highend_label->set_text("Vulkan");
 	highend_label->set_mouse_filter(Control::MOUSE_FILTER_STOP);
-	highend_label->set_tooltip_text(TTR("Only supported in the Forward+ and Mobile rendering methods, not Compatibility."));
+	highend_label->set_tooltip_text(TTR("High-end node"));
 
 	node_desc = memnew(RichTextLabel);
 	members_vb->add_child(node_desc);
@@ -7001,8 +6951,8 @@ VisualShaderEditor::VisualShaderEditor() {
 
 		varying_mode = memnew(OptionButton);
 		hb->add_child(varying_mode);
-		varying_mode->add_item(U"Vertex → [Fragment, Light]");
-		varying_mode->add_item(U"Fragment → Light");
+		varying_mode->add_item("Vertex -> [Fragment, Light]");
+		varying_mode->add_item("Fragment -> Light");
 		varying_mode->set_accessibility_name(TTRC("Varying Mode"));
 		varying_mode->connect(SceneStringName(item_selected), callable_mp(this, &VisualShaderEditor::_varying_mode_changed));
 
@@ -7671,9 +7621,9 @@ VisualShaderEditor::VisualShaderEditor() {
 	add_options.push_back(AddOption("Reflect", "Vector/Functions", "VisualShaderNodeVectorOp", TTR("Returns the vector that points in the direction of reflection ( a : incident vector, b : normal vector )."), { VisualShaderNodeVectorOp::OP_REFLECT, VisualShaderNodeVectorFunc::OP_TYPE_VECTOR_2D }, VisualShaderNode::PORT_TYPE_VECTOR_2D));
 	add_options.push_back(AddOption("Reflect", "Vector/Functions", "VisualShaderNodeVectorOp", TTR("Returns the vector that points in the direction of reflection ( a : incident vector, b : normal vector )."), { VisualShaderNodeVectorOp::OP_REFLECT, VisualShaderNodeVectorFunc::OP_TYPE_VECTOR_3D }, VisualShaderNode::PORT_TYPE_VECTOR_3D));
 	add_options.push_back(AddOption("Reflect", "Vector/Functions", "VisualShaderNodeVectorOp", TTR("Returns the vector that points in the direction of reflection ( a : incident vector, b : normal vector )."), { VisualShaderNodeVectorOp::OP_REFLECT, VisualShaderNodeVectorFunc::OP_TYPE_VECTOR_4D }, VisualShaderNode::PORT_TYPE_VECTOR_4D));
-	add_options.push_back(AddOption("Refract", "Vector/Functions", "VisualShaderNodeVectorRefract", TTR("Returns the vector that points in the direction of refraction."), { VisualShaderNodeVectorRefract::OP_TYPE_VECTOR_2D }, VisualShaderNode::PORT_TYPE_VECTOR_2D));
-	add_options.push_back(AddOption("Refract", "Vector/Functions", "VisualShaderNodeVectorRefract", TTR("Returns the vector that points in the direction of refraction."), { VisualShaderNodeVectorRefract::OP_TYPE_VECTOR_3D }, VisualShaderNode::PORT_TYPE_VECTOR_3D));
-	add_options.push_back(AddOption("Refract", "Vector/Functions", "VisualShaderNodeVectorRefract", TTR("Returns the vector that points in the direction of refraction."), { VisualShaderNodeVectorRefract::OP_TYPE_VECTOR_4D }, VisualShaderNode::PORT_TYPE_VECTOR_4D));
+	add_options.push_back(AddOption("Refract", "Vector/Functions", "VisualShaderNodeVectorRefract", TTR("Returns the vector that points in the direction of refraction."), {}, VisualShaderNode::PORT_TYPE_VECTOR_2D));
+	add_options.push_back(AddOption("Refract", "Vector/Functions", "VisualShaderNodeVectorRefract", TTR("Returns the vector that points in the direction of refraction."), {}, VisualShaderNode::PORT_TYPE_VECTOR_3D));
+	add_options.push_back(AddOption("Refract", "Vector/Functions", "VisualShaderNodeVectorRefract", TTR("Returns the vector that points in the direction of refraction."), {}, VisualShaderNode::PORT_TYPE_VECTOR_4D));
 	add_options.push_back(AddOption("Remap", "Vector/Functions", "VisualShaderNodeRemap", TTR("Remaps a vector from the input range to the output range."), { VisualShaderNodeRemap::OP_TYPE_VECTOR_2D }, VisualShaderNode::PORT_TYPE_VECTOR_2D));
 	add_options.push_back(AddOption("Remap", "Vector/Functions", "VisualShaderNodeRemap", TTR("Remaps a vector from the input range to the output range."), { VisualShaderNodeRemap::OP_TYPE_VECTOR_3D }, VisualShaderNode::PORT_TYPE_VECTOR_3D));
 	add_options.push_back(AddOption("Remap", "Vector/Functions", "VisualShaderNodeRemap", TTR("Remaps a vector from the input range to the output range."), { VisualShaderNodeRemap::OP_TYPE_VECTOR_4D }, VisualShaderNode::PORT_TYPE_VECTOR_4D));
@@ -7785,10 +7735,6 @@ VisualShaderEditor::VisualShaderEditor() {
 	panning_debounce_timer->set_wait_time(1.0);
 	panning_debounce_timer->connect("timeout", callable_mp(this, &VisualShaderEditor::save_editor_layout));
 	add_child(panning_debounce_timer);
-}
-
-VisualShaderEditor::~VisualShaderEditor() {
-	save_editor_layout();
 }
 
 class VisualShaderNodePluginInputEditor : public OptionButton {
@@ -8469,20 +8415,6 @@ bool VisualShaderConversionPlugin::handles(const Ref<Resource> &p_resource) cons
 Ref<Resource> VisualShaderConversionPlugin::convert(const Ref<Resource> &p_resource) const {
 	Ref<VisualShader> vshader = p_resource;
 	ERR_FAIL_COND_V(vshader.is_null(), Ref<Resource>());
-	int embed = vshader->has_node_embeds();
-
-	EditorToaster *toast = EditorToaster::get_singleton();
-	if (toast == nullptr) {
-		ERR_FAIL_COND_V_MSG(embed == 2, Ref<Resource>(), "Cannot convert VisualShader to GDShader because VisualShader has embedded subresources.");
-		if (embed == 1) {
-			WARN_PRINT("Visual Shader conversion cannot convert external dependencies. Resource references from Nodes will have to be rebound as ShaderParameters on a Material.");
-		}
-	} else if (embed == 2) {
-		toast->popup_str(TTR("Cannot convert VisualShader to GDShader because VisualShader has embedded subresources."), EditorToaster::SEVERITY_ERROR);
-		return Ref<Resource>();
-	} else if (embed == 1) {
-		toast->popup_str(TTR("Visual Shader conversion cannot convert external dependencies. Resource references from Nodes will have to be rebound as ShaderParameters on a Material."), EditorToaster::SEVERITY_WARNING);
-	}
 
 	Ref<Shader> shader;
 	shader.instantiate();

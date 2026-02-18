@@ -37,7 +37,6 @@
 #include "scene/main/viewport.h"
 #include "scene/resources/curve_texture.h"
 #include "scene/resources/gradient_texture.h"
-#include "scene/resources/mesh.h"
 #include "scene/resources/particle_process_material.h"
 
 AABB CPUParticles3D::get_aabb() const {
@@ -828,7 +827,7 @@ void CPUParticles3D::_particles_process(double p_delta) {
 				tex_anim_offset = curve_parameters[PARAM_ANGLE]->sample(tv);
 			}
 
-			p.seed = seed + uint32_t(1) + i + cycle * pcount;
+			p.seed = seed + uint32_t(1) + i + cycle;
 			rng->set_seed(p.seed);
 			p.angle_rand = rng->randf();
 			p.scale_rand = rng->randf();
@@ -1823,5 +1822,5 @@ CPUParticles3D::CPUParticles3D() {
 
 CPUParticles3D::~CPUParticles3D() {
 	ERR_FAIL_NULL(RenderingServer::get_singleton());
-	RS::get_singleton()->free_rid(multimesh);
+	RS::get_singleton()->free(multimesh);
 }

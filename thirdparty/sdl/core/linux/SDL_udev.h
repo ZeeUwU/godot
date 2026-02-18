@@ -30,8 +30,7 @@
 #define SDL_USE_LIBUDEV 1
 #endif
 
-//#include <libudev.h>
-#include "thirdparty/linuxbsd_headers/udev/libudev.h"
+#include <libudev.h>
 #include <sys/time.h>
 #include <sys/types.h>
 

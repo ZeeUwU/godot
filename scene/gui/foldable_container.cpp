@@ -219,7 +219,8 @@ void FoldableContainer::gui_input(const Ref<InputEvent> &p_event) {
 
 	Ref<InputEventMouseMotion> m = p_event;
 	if (m.is_valid()) {
-		if (_get_title_rect().has_point(m->get_position())) {
+		Rect2 title_rect = Rect2(0, (title_position == POSITION_TOP) ? 0 : get_size().height - title_minimum_size.height, get_size().width, title_minimum_size.height);
+		if (title_rect.has_point(m->get_position())) {
 			if (!is_hovering) {
 				is_hovering = true;
 				queue_redraw();
@@ -240,7 +241,8 @@ void FoldableContainer::gui_input(const Ref<InputEvent> &p_event) {
 
 	Ref<InputEventMouseButton> b = p_event;
 	if (b.is_valid()) {
-		if (b->get_button_index() == MouseButton::LEFT && b->is_pressed() && _get_title_rect().has_point(b->get_position())) {
+		Rect2 title_rect = Rect2(0, (title_position == POSITION_TOP) ? 0 : get_size().height - title_minimum_size.height, get_size().width, title_minimum_size.height);
+		if (b->get_button_index() == MouseButton::LEFT && b->is_pressed() && title_rect.has_point(b->get_position())) {
 			set_folded(!folded);
 			emit_signal(SNAME("folding_changed"), folded);
 			accept_event();
@@ -253,13 +255,6 @@ String FoldableContainer::get_tooltip(const Point2 &p_pos) const {
 		return Control::get_tooltip(p_pos);
 	}
 	return String();
-}
-
-bool FoldableContainer::has_point(const Point2 &p_point) const {
-	if (folded) {
-		return _get_title_rect().has_point(p_point);
-	}
-	return Control::has_point(p_point);
 }
 
 void FoldableContainer::_notification(int p_what) {
@@ -277,7 +272,9 @@ void FoldableContainer::_notification(int p_what) {
 				title_controls_width += h_separation;
 			}
 
-			const Rect2 title_rect = _get_title_rect();
+			Rect2 title_rect(
+					Point2(0, (title_position == POSITION_TOP) ? 0 : size.height - title_minimum_size.height),
+					Size2(size.width, title_minimum_size.height));
 			_draw_flippable_stylebox(title_style, title_rect);
 
 			Size2 title_ms = title_style->get_minimum_size();
@@ -320,7 +317,7 @@ void FoldableContainer::_notification(int p_what) {
 				_draw_flippable_stylebox(theme_cache.panel_style, panel_rect);
 			}
 
-			if (has_focus(true)) {
+			if (has_focus()) {
 				Rect2 focus_rect = folded ? title_rect : Rect2(Point2(), size);
 				_draw_flippable_stylebox(theme_cache.focus_style, focus_rect);
 			}
@@ -434,10 +431,6 @@ Ref<Texture2D> FoldableContainer::_get_title_icon() const {
 	return theme_cache.folded_arrow;
 }
 
-Rect2 FoldableContainer::_get_title_rect() const {
-	return Rect2(0, (title_position == POSITION_TOP) ? 0 : (get_size().height - title_minimum_size.height), get_size().width, title_minimum_size.height);
-}
-
 void FoldableContainer::_update_title_min_size() const {
 	Ref<StyleBox> title_style = folded ? theme_cache.title_collapsed_style : theme_cache.title_style;
 	Ref<Texture2D> icon = _get_title_icon();
@@ -495,8 +488,7 @@ void FoldableContainer::_shape() {
 	}
 	text_buf->set_horizontal_alignment(_get_actual_alignment());
 	text_buf->set_text_overrun_behavior(overrun_behavior);
-	const String &lang = language.is_empty() ? _get_locale() : language;
-	text_buf->add_string(atr(title), font, font_size, lang);
+	text_buf->add_string(atr(title), font, font_size, language);
 }
 
 HorizontalAlignment FoldableContainer::_get_actual_alignment() const {
