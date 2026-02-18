@@ -1,4 +1,3 @@
-
 #[vertex]
 
 #version 450
@@ -2666,6 +2665,10 @@ void fragment_shader(in SceneData scene_data) {
 					binormal,
 					tangent, anisotropy,
 #endif
+#ifdef LIGHT_SOURCE_INFO
+					light_index,
+					get_light_count(),
+#endif
 					diffuse_light,
 					direct_specular_light);
 		}
@@ -2728,6 +2731,10 @@ void fragment_shader(in SceneData scene_data) {
 #endif // LIGHT_CLEARCOAT_USED
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
+#endif
+#ifdef LIGHT_SOURCE_INFO
+						light_index,
+						get_light_count(),
 #endif
 						diffuse_light, direct_specular_light);
 			}
