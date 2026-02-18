@@ -52,10 +52,6 @@
 #include <mntent.h>
 #endif
 
-String DirAccessUnix::fix_path(const String &p_path) const {
-	return DirAccess::fix_path(p_path).simplify_path();
-}
-
 Error DirAccessUnix::list_dir_begin() {
 	list_dir_end(); //close any previous dir opening!
 
@@ -441,7 +437,7 @@ Error DirAccessUnix::remove(String p_path) {
 	}
 
 	struct stat flags = {};
-	if (lstat(p_path.utf8().get_data(), &flags) != 0) {
+	if ((lstat(p_path.utf8().get_data(), &flags) != 0)) {
 		return FAILED;
 	}
 
@@ -471,7 +467,7 @@ bool DirAccessUnix::is_link(String p_file) {
 	}
 
 	struct stat flags = {};
-	if (lstat(p_file.utf8().get_data(), &flags) != 0) {
+	if ((lstat(p_file.utf8().get_data(), &flags) != 0)) {
 		return false;
 	}
 
@@ -488,8 +484,8 @@ String DirAccessUnix::read_link(String p_file) {
 		p_file = p_file.left(-1);
 	}
 
-	char buf[PATH_MAX];
-	memset(buf, 0, PATH_MAX);
+	char buf[256];
+	memset(buf, 0, 256);
 	ssize_t len = readlink(p_file.utf8().get_data(), buf, sizeof(buf));
 	String link;
 	if (len > 0) {
@@ -528,7 +524,7 @@ String DirAccessUnix::get_filesystem_type() const {
 	if (statfs(current_dir.utf8().get_data(), &fs) != 0) {
 		return "";
 	}
-	switch (static_cast<unsigned int>(fs.f_type)) {
+	switch (fs.f_type) {
 		case 0x0000adf5:
 			return "ADFS";
 		case 0x0000adff:

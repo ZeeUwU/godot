@@ -312,7 +312,6 @@ private:
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
-	virtual uint32_t _get_libraries_property_usage() const override;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 	virtual void _validate_property(PropertyInfo &p_property) const override;
 	void _notification(int p_what);
@@ -351,10 +350,6 @@ public:
 	real_t get_connection_activity(const StringName &p_path, int p_connection) const;
 
 	uint64_t get_last_process_pass() const;
-
-#ifdef TOOLS_ENABLED
-	String get_editor_error_message() const;
-#endif
 
 	AnimationTree();
 	~AnimationTree();

@@ -16,11 +16,8 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.5-dev\n"
 
-msgid "Save"
-msgstr "Konservi"
-
-msgid "Clear"
-msgstr "Vakigi"
+msgid "All Recognized"
+msgstr "Ĉiaj rekonaj dosiertipoj"
 
 msgid "Open"
 msgstr "Malfermi"
@@ -28,11 +25,11 @@ msgstr "Malfermi"
 msgid "Select Current Folder"
 msgstr "Elekti kurantan dosierujon"
 
+msgid "Save"
+msgstr "Konservi"
+
 msgid "Select This Folder"
 msgstr "Elekti ĉi tiun dosierujon"
-
-msgid "All Recognized"
-msgstr "Ĉiaj rekonaj dosiertipoj"
 
 msgid "Open a File"
 msgstr "Malfermi dosieron"
@@ -64,11 +61,11 @@ msgstr "Vojo:"
 msgid "Refresh files."
 msgstr "Aktualigi dosieroj."
 
-msgid "Directories & Files:"
-msgstr "Dosierujoj kaj dosieroj:"
-
 msgid "Toggle the visibility of hidden files."
 msgstr "Baskuli videblo de kaŝitaj dosieroj."
+
+msgid "Directories & Files:"
+msgstr "Dosierujoj kaj dosieroj:"
 
 msgid "File:"
 msgstr "Dosiero:"
@@ -102,6 +99,9 @@ msgstr "Alglui"
 
 msgid "Select All"
 msgstr "Elekti tutan"
+
+msgid "Clear"
+msgstr "Vakigi"
 
 msgid "Undo"
 msgstr "Malfari"

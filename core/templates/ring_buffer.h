@@ -213,4 +213,5 @@ public:
 	RingBuffer(int p_power = 0) {
 		resize(p_power);
 	}
+	~RingBuffer() {}
 };

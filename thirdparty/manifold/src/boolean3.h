@@ -43,6 +43,7 @@
  */
 
 namespace manifold {
+
 /** @ingroup Private */
 class Boolean3 {
  public:

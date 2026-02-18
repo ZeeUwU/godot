@@ -33,7 +33,6 @@
 #include "scene/gui/control.h"
 
 class ScriptEditorDebugger;
-class Timer;
 
 class EmbeddedProcessBase : public Control {
 	GDCLASS(EmbeddedProcessBase, Control);
@@ -66,7 +65,6 @@ public:
 	virtual void embed_process(OS::ProcessID p_pid) = 0;
 	virtual int get_embedded_pid() const = 0;
 	virtual void reset() = 0;
-	virtual void reset_timers() = 0;
 	virtual void request_close() = 0;
 	virtual void queue_update_embedded_process() = 0;
 
@@ -120,7 +118,6 @@ public:
 	void embed_process(OS::ProcessID p_pid) override;
 	int get_embedded_pid() const override;
 	void reset() override;
-	void reset_timers() override;
 	void request_close() override;
 	void queue_update_embedded_process() override;
 

@@ -80,7 +80,6 @@ void CameraLinux::_update_devices() {
 			free(devices);
 		}
 
-		call_deferred("emit_signal", SNAME(CameraServer::feeds_updated_signal_name));
 		usleep(1000000);
 	}
 }
@@ -170,7 +169,6 @@ inline void CameraLinux::set_monitoring_feeds(bool p_monitoring_feeds) {
 
 	CameraServer::set_monitoring_feeds(p_monitoring_feeds);
 	if (p_monitoring_feeds) {
-		exit_flag.clear();
 		camera_thread.start(CameraLinux::camera_thread_func, this);
 	} else {
 		exit_flag.set();

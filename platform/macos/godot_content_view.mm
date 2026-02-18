@@ -34,7 +34,6 @@
 #import "godot_window.h"
 #import "key_mapping_macos.h"
 
-#include "core/profiling/profiling.h"
 #include "main/main.h"
 
 @implementation GodotContentLayerDelegate
@@ -57,9 +56,6 @@
 - (void)displayLayer:(CALayer *)layer {
 	DisplayServerMacOS *ds = (DisplayServerMacOS *)DisplayServer::get_singleton();
 	if (OS::get_singleton()->get_main_loop() && ds->get_is_resizing() && need_redraw) {
-		GodotProfileFrameMark;
-		GodotProfileZone("[GodotContentLayerDelegate displayLayer]");
-
 		Main::force_redraw();
 		if (!Main::is_iterating()) { // Avoid cyclic loop.
 			Main::iteration();
@@ -547,7 +543,7 @@
 	ds->get_key_modifier_state([event modifierFlags], mm);
 
 	const NSRect contentRect = [wd.window_view frame];
-	if (NSPointInRect([event locationInWindow], contentRect) && [NSWindow windowNumberAtPoint:[NSEvent mouseLocation] belowWindowWithWindowNumber:0 /*topmost*/] == [wd.window_object windowNumber]) {
+	if (NSPointInRect([event locationInWindow], contentRect)) {
 		ds->mouse_enter_window(window_id);
 	}
 

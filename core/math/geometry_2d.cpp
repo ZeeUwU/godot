@@ -30,14 +30,13 @@
 
 #include "geometry_2d.h"
 
-GODOT_GCC_WARNING_PUSH_AND_IGNORE("-Walloc-zero")
 #include "thirdparty/clipper2/include/clipper2/clipper.h"
-GODOT_GCC_WARNING_POP
 #include "thirdparty/misc/polypartition.h"
 #define STB_RECT_PACK_IMPLEMENTATION
 #include "thirdparty/misc/stb_rect_pack.h"
 
 const int clipper_precision = 5; // Based on CMP_EPSILON.
+const double clipper_scale = Math::pow(10.0, clipper_precision);
 
 void Geometry2D::merge_many_polygons(const Vector<Vector<Vector2>> &p_polygons, Vector<Vector<Vector2>> &r_out_polygons, Vector<Vector<Vector2>> &r_out_holes) {
 	using namespace Clipper2Lib;
@@ -293,16 +292,14 @@ Vector<Vector<Point2>> Geometry2D::_polypaths_do_operation(PolyBooleanOperation 
 	}
 
 	Vector<Vector<Point2>> polypaths;
-	polypaths.resize(paths.size());
-	for (PathsD::size_type i = 0; i < paths.size(); i++) {
+	for (PathsD::size_type i = 0; i < paths.size(); ++i) {
 		const PathD &path = paths[i];
 
 		Vector<Vector2> polypath;
-		polypath.resize(path.size());
 		for (PathsD::size_type j = 0; j < path.size(); ++j) {
-			polypath.set(j, Point2(static_cast<real_t>(path[j].x), static_cast<real_t>(path[j].y)));
+			polypath.push_back(Point2(static_cast<real_t>(path[j].x), static_cast<real_t>(path[j].y)));
 		}
-		polypaths.set(i, polypath);
+		polypaths.push_back(polypath);
 	}
 	return polypaths;
 }
@@ -350,19 +347,20 @@ Vector<Vector<Point2>> Geometry2D::_polypath_offset(const Vector<Point2> &p_poly
 	}
 
 	// Inflate/deflate.
-	PathsD paths = InflatePaths({ polypath }, p_delta, jt, et, 2.0, clipper_precision, 0.25);
+	PathsD paths = InflatePaths({ polypath }, p_delta, jt, et, 2.0, clipper_precision, 0.25 * clipper_scale);
+	// Here the points are scaled up internally and
+	// the arc_tolerance is scaled accordingly
+	// to attain the desired precision.
 
 	Vector<Vector<Point2>> polypaths;
-	polypaths.resize(paths.size());
 	for (PathsD::size_type i = 0; i < paths.size(); ++i) {
 		const PathD &path = paths[i];
 
 		Vector<Vector2> polypath2;
-		polypath2.resize(path.size());
 		for (PathsD::size_type j = 0; j < path.size(); ++j) {
-			polypath2.set(j, Point2(static_cast<real_t>(path[j].x), static_cast<real_t>(path[j].y)));
+			polypath2.push_back(Point2(static_cast<real_t>(path[j].x), static_cast<real_t>(path[j].y)));
 		}
-		polypaths.set(i, polypath2);
+		polypaths.push_back(polypath2);
 	}
 	return polypaths;
 }

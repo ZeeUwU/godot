@@ -56,7 +56,7 @@ void Slider::gui_input(const Ref<InputEvent> &p_event) {
 		if (mb->get_button_index() == MouseButton::LEFT) {
 			if (mb->is_pressed()) {
 				Ref<Texture2D> grabber;
-				if (mouse_inside || has_focus(true)) {
+				if (mouse_inside || has_focus()) {
 					grabber = theme_cache.grabber_hl_icon;
 				} else {
 					grabber = theme_cache.grabber_icon;
@@ -136,7 +136,7 @@ void Slider::gui_input(const Ref<InputEvent> &p_event) {
 				return;
 			}
 			if (is_joypad_event) {
-				if (!input->is_action_just_pressed_by_event("ui_left", p_event, true)) {
+				if (!input->is_action_just_pressed("ui_left", true)) {
 					return;
 				}
 				set_process_internal(true);
@@ -152,7 +152,7 @@ void Slider::gui_input(const Ref<InputEvent> &p_event) {
 				return;
 			}
 			if (is_joypad_event) {
-				if (!input->is_action_just_pressed_by_event("ui_right", p_event, true)) {
+				if (!input->is_action_just_pressed("ui_right", true)) {
 					return;
 				}
 				set_process_internal(true);
@@ -168,7 +168,7 @@ void Slider::gui_input(const Ref<InputEvent> &p_event) {
 				return;
 			}
 			if (is_joypad_event) {
-				if (!input->is_action_just_pressed_by_event("ui_up", p_event, true)) {
+				if (!input->is_action_just_pressed("ui_up", true)) {
 					return;
 				}
 				set_process_internal(true);
@@ -180,7 +180,7 @@ void Slider::gui_input(const Ref<InputEvent> &p_event) {
 				return;
 			}
 			if (is_joypad_event) {
-				if (!input->is_action_just_pressed_by_event("ui_down", p_event, true)) {
+				if (!input->is_action_just_pressed("ui_down", true)) {
 					return;
 				}
 				set_process_internal(true);
@@ -275,7 +275,7 @@ void Slider::_notification(int p_what) {
 			Ref<StyleBox> style = theme_cache.slider_style;
 			Ref<Texture2D> tick = theme_cache.tick_icon;
 
-			bool highlighted = editable && (mouse_inside || has_focus(true));
+			bool highlighted = editable && (mouse_inside || has_focus());
 			Ref<Texture2D> grabber;
 			if (editable) {
 				if (highlighted) {

@@ -31,7 +31,7 @@
 #import "os_macos.h"
 
 #import "dir_access_macos.h"
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 #import "display_server_embedded.h"
 #endif
 #import "display_server_macos.h"
@@ -39,9 +39,6 @@
 #import "godot_application_delegate.h"
 
 #include "core/crypto/crypto_core.h"
-#include "core/io/file_access.h"
-#include "core/os/main_loop.h"
-#include "core/profiling/profiling.h"
 #include "core/version_generated.gen.h"
 #include "drivers/apple/os_log_logger.h"
 #include "main/main.h"
@@ -107,7 +104,7 @@ bool OS_MacOS::is_sandboxed() const {
 }
 
 bool OS_MacOS::request_permission(const String &p_name) {
-	if (@available(macOS 11.0, *)) {
+	if (@available(macOS 10.15, *)) {
 		if (p_name == "macos.permission.RECORD_SCREEN") {
 			if (CGPreflightScreenCaptureAccess()) {
 				return true;
@@ -127,7 +124,7 @@ bool OS_MacOS::request_permission(const String &p_name) {
 Vector<String> OS_MacOS::get_granted_permissions() const {
 	Vector<String> ret;
 
-	if (@available(macOS 11.0, *)) {
+	if (@available(macOS 10.15, *)) {
 		if (CGPreflightScreenCaptureAccess()) {
 			ret.push_back("macos.permission.RECORD_SCREEN");
 		}
@@ -318,9 +315,7 @@ String OS_MacOS::get_version() const {
 String OS_MacOS::get_version_alias() const {
 	NSOperatingSystemVersion ver = [NSProcessInfo processInfo].operatingSystemVersion;
 	String macos_string;
-	if (ver.majorVersion == 26) {
-		macos_string += "Tahoe";
-	} else if (ver.majorVersion == 15) {
+	if (ver.majorVersion == 15) {
 		macos_string += "Sequoia";
 	} else if (ver.majorVersion == 14) {
 		macos_string += "Sonoma";
@@ -467,19 +462,6 @@ String OS_MacOS::get_bundle_icon_path() const {
 		NSString *icon_path = [[main infoDictionary] objectForKey:@"CFBundleIconFile"];
 		if (icon_path) {
 			ret.append_utf8([icon_path UTF8String]);
-		}
-	}
-	return ret;
-}
-
-String OS_MacOS::get_bundle_icon_name() const {
-	String ret;
-
-	NSBundle *main = [NSBundle mainBundle];
-	if (main) {
-		NSString *icon_name = [[main infoDictionary] objectForKey:@"CFBundleIconName"];
-		if (icon_name) {
-			ret.append_utf8([icon_name UTF8String]);
 		}
 	}
 	return ret;
@@ -852,13 +834,6 @@ Error OS_MacOS::create_process(const String &p_path, const List<String> &p_argum
 }
 
 Error OS_MacOS::create_instance(const List<String> &p_arguments, ProcessID *r_child_id) {
-	// Do not run headless instance as app bundle, since it will never send `applicationDidFinishLaunching` and register as failed start after timeout.
-	for (size_t i = 0; i < std::size(OS_MacOS::headless_args); i++) {
-		if (p_arguments.find(String(OS_MacOS::headless_args[i]))) {
-			return OS_Unix::create_process(get_executable_path(), p_arguments, r_child_id, false);
-		}
-	}
-
 	// If executable is bundled, always execute editor instances as an app bundle to ensure app window is registered and activated correctly.
 	NSString *nsappname = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"];
 	if (nsappname != nil) {
@@ -1076,7 +1051,7 @@ OS_MacOS::OS_MacOS(const char *p_execpath, int p_argc, char **p_argv) {
 // MARK: - OS_MacOS_NSApp
 
 void OS_MacOS_NSApp::run() {
-	[NSApp run]; // Note: this call will never return. Use `OS_MacOS_NSApp::cleanup()` for cleanup.
+	[NSApp run];
 }
 
 static bool sig_received = false;
@@ -1111,9 +1086,6 @@ void OS_MacOS_NSApp::start_main() {
 				pre_wait_observer = CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault, kCFRunLoopBeforeWaiting, true, 0, ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
 					@autoreleasepool {
 						@try {
-							GodotProfileFrameMark;
-							GodotProfileZone("macOS main loop");
-
 							if (ds_mac) {
 								ds_mac->_process_events(false);
 							} else if (ds) {
@@ -1152,7 +1124,6 @@ void OS_MacOS_NSApp::start_main() {
 }
 
 void OS_MacOS_NSApp::terminate() {
-	// Note: This method only sends app termination request. Use `OS_MacOS_NSApp::cleanup()` for cleanup.
 	if (pre_wait_observer) {
 		CFRunLoopRemoveObserver(CFRunLoopGetCurrent(), pre_wait_observer, kCFRunLoopCommonModes);
 		CFRelease(pre_wait_observer);
@@ -1172,7 +1143,6 @@ void OS_MacOS_NSApp::cleanup() {
 			Main::cleanup();
 		}
 	}
-	godot_cleanup_profiler();
 }
 
 OS_MacOS_NSApp::OS_MacOS_NSApp(const char *p_execpath, int p_argc, char **p_argv) :
@@ -1181,7 +1151,7 @@ OS_MacOS_NSApp::OS_MacOS_NSApp(const char *p_execpath, int p_argc, char **p_argv
 	[GodotApplication sharedApplication];
 
 	// In case we are unbundled, make us a proper UI application.
-	[NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+	[NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
 
 	// Menu bar setup must go between sharedApplication above and
 	// finishLaunching below, in order to properly emulate the behavior
@@ -1201,62 +1171,9 @@ OS_MacOS_NSApp::OS_MacOS_NSApp(const char *p_execpath, int p_argc, char **p_argv
 	sigaction(SIGINT, &action, nullptr);
 }
 
-// MARK: - OS_MacOS_Headless
-
-void OS_MacOS_Headless::run() {
-	CFRunLoopGetCurrent();
-
-	@autoreleasepool {
-		Error err = Main::setup(execpath, argc, argv);
-		if (err != OK) {
-			if (err == ERR_HELP) {
-				return set_exit_code(EXIT_SUCCESS);
-			}
-			return set_exit_code(EXIT_FAILURE);
-		}
-	}
-
-	int ret;
-	@autoreleasepool {
-		ret = Main::start();
-	}
-
-	if (ret == EXIT_SUCCESS && main_loop) {
-		@autoreleasepool {
-			main_loop->initialize();
-		}
-
-		while (true) {
-			@autoreleasepool {
-				@try {
-					if (Input::get_singleton()) {
-						Input::get_singleton()->flush_buffered_events();
-					}
-
-					if (Main::iteration()) {
-						break;
-					}
-
-					CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, 0);
-				} @catch (NSException *exception) {
-					ERR_PRINT("NSException: " + String::utf8([exception reason].UTF8String));
-				}
-			}
-		}
-
-		main_loop->finalize();
-	}
-
-	Main::cleanup();
-}
-
-OS_MacOS_Headless::OS_MacOS_Headless(const char *p_execpath, int p_argc, char **p_argv) :
-		OS_MacOS(p_execpath, p_argc, p_argv) {
-}
-
 // MARK: - OS_MacOS_Embedded
 
-#ifdef TOOLS_ENABLED
+#ifdef DEBUG_ENABLED
 
 void OS_MacOS_Embedded::run() {
 	CFRunLoopGetCurrent();
@@ -1289,16 +1206,8 @@ void OS_MacOS_Embedded::run() {
 		while (true) {
 			@autoreleasepool {
 				@try {
-					GodotProfileFrameMark;
-					GodotProfileZone("macOS embedded main loop");
-
 					ds->process_events();
 
-#ifdef SDL_ENABLED
-					if (joypad_sdl) {
-						joypad_sdl->process_events();
-					}
-#endif
 					if (Main::iteration()) {
 						break;
 					}

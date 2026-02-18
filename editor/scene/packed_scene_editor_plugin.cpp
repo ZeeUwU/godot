@@ -31,6 +31,7 @@
 #include "packed_scene_editor_plugin.h"
 
 #include "editor/editor_node.h"
+#include "scene/gui/button.h"
 #include "scene/resources/packed_scene.h"
 
 void PackedSceneEditor::_on_open_scene_pressed() {
@@ -38,10 +39,18 @@ void PackedSceneEditor::_on_open_scene_pressed() {
 	callable_mp(EditorNode::get_singleton(), &EditorNode::load_scene).call_deferred(packed_scene->get_path(), false, false, false, false);
 }
 
+void PackedSceneEditor::_notification(int p_what) {
+	switch (p_what) {
+		case NOTIFICATION_THEME_CHANGED: {
+			open_scene_button->set_button_icon(get_editor_theme_icon(SNAME("PackedScene")));
+		} break;
+	}
+}
+
 PackedSceneEditor::PackedSceneEditor(Ref<PackedScene> &p_packed_scene) {
 	packed_scene = p_packed_scene;
 
-	EditorInspectorActionButton *open_scene_button = memnew(EditorInspectorActionButton(TTRC("Open Scene"), SNAME("PackedScene")));
+	open_scene_button = EditorInspector::create_inspector_action_button(TTR("Open Scene"));
 	open_scene_button->connect(SceneStringName(pressed), callable_mp(this, &PackedSceneEditor::_on_open_scene_pressed));
 	open_scene_button->set_disabled(!packed_scene->get_path().get_file().is_valid_filename());
 	add_child(open_scene_button);

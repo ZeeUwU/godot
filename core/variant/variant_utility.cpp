@@ -1011,7 +1011,7 @@ void VariantUtilityFunctions::prints(const Variant **p_args, int p_arg_count, Ca
 }
 
 void VariantUtilityFunctions::printraw(const Variant **p_args, int p_arg_count, Callable::CallError &r_error) {
-	print_raw(join_string(p_args, p_arg_count));
+	OS::get_singleton()->print("%s", join_string(p_args, p_arg_count).utf8().get_data());
 	r_error.error = Callable::CallError::CALL_OK;
 }
 
