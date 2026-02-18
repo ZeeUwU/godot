@@ -90,6 +90,9 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 B, hvec3 T, half anisotropy,
 #endif
+#ifdef LIGHT_SOURCE_INFO
+		int light_index, int light_count,
+#endif
 		inout hvec3 diffuse_light, inout hvec3 specular_light) {
 #if defined(LIGHT_CODE_USED)
 	// Light is written by the user shader.
@@ -463,6 +466,10 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 binormal, hvec3 tangent, half anisotropy,
 #endif
+#ifdef LIGHT_SOURCE_INFO
+		int light_index,
+		int light_count,
+#endif
 		inout hvec3 diffuse_light, inout hvec3 specular_light) {
 
 	// Omni light attenuation.
@@ -726,6 +733,10 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
 #endif
+#ifdef LIGHT_SOURCE_INFO
+			light_index,
+			get_light_count(),
+#endif
 			diffuse_light,
 			specular_light);
 }
@@ -759,6 +770,10 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 binormal, hvec3 tangent, half anisotropy,
+#ifdef LIGHT_SOURCE_INFO
+		int light_index,
+		int light_count,
+#endif
 #endif
 		inout hvec3 diffuse_light,
 		inout hvec3 specular_light) {
@@ -927,6 +942,10 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
+#ifdef LIGHT_SOURCE_INFO
+			light_index,
+			get_light_count(),
+#endif
 #endif
 			diffuse_light, specular_light);
 }
