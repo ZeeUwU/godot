@@ -2649,6 +2649,8 @@ void fragment_shader(in SceneData scene_data) {
 #endif
 
 			float size_A = sc_use_directional_soft_shadows() ? directional_lights.data[i].size : 0.0;
+			
+			int light_index = int(i);
 
 			light_compute(normal, directional_lights.data[i].direction, normalize(view), size_A,
 #ifndef DEBUG_DRAW_PSSM_SPLITS
@@ -2676,9 +2678,8 @@ void fragment_shader(in SceneData scene_data) {
 					binormal,
 					tangent, anisotropy,
 #endif
-#ifdef LIGHT_SOURCE_INFO
+#ifdef LIGHT_INDEX_USED
 					light_index,
-					get_light_count(),
 #endif
 					diffuse_light,
 					max_diffuse_intensity,
@@ -2727,6 +2728,8 @@ void fragment_shader(in SceneData scene_data) {
 					continue; // Statically baked light and object uses lightmap, skip
 				}
 
+				int int_light_index = int(light_index);
+
 				light_process_omni(light_index, vertex, view, normal, vertex_ddx, vertex_ddy, f0, roughness, metallic, scene_data.taa_frame_count, albedo, alpha, screen_uv, energy_compensation,
 #ifdef LIGHT_BACKLIGHT_USED
 						backlight,
@@ -2746,9 +2749,8 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
 #endif
-#ifdef LIGHT_SOURCE_INFO
-						light_index,
-						get_light_count(),
+#ifdef LIGHT_INDEX_USED
+						int_light_index,
 #endif
 						diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, direct_specular_light);
 			}
@@ -2792,6 +2794,8 @@ void fragment_shader(in SceneData scene_data) {
 					continue; // Statically baked light and object uses lightmap, skip
 				}
 
+				int int_light_index = int(light_index);
+
 				light_process_spot(light_index, vertex, view, normal, vertex_ddx, vertex_ddy, f0, roughness, metallic, scene_data.taa_frame_count, albedo, alpha, screen_uv, energy_compensation,
 #ifdef LIGHT_BACKLIGHT_USED
 						backlight,
@@ -2810,6 +2814,9 @@ void fragment_shader(in SceneData scene_data) {
 #endif // LIGHT_CLEARCOAT_USED
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
+#endif
+#ifdef LIGHT_INDEX_USED
+						int_light_index,
 #endif
 						diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, direct_specular_light);
 			}

@@ -464,8 +464,8 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 B, hvec3 T, half anisotropy,
 #endif
-#ifdef LIGHT_SOURCE_INFO
-		int light_index, int light_count,
+#ifdef LIGHT_INDEX_USED
+		int light_index,
 #endif
 		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout float bands, inout hvec3 specular_light) {
 #if defined(LIGHT_CODE_USED)
@@ -696,9 +696,8 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 binormal, hvec3 tangent, half anisotropy,
 #endif
-#ifdef LIGHT_SOURCE_INFO
+#ifdef LIGHT_INDEX_USED
 		int light_index,
-		int light_count,
 #endif
 		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout float bands, inout hvec3 specular_light) {
 
@@ -963,9 +962,8 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
 #endif
-#ifdef LIGHT_SOURCE_INFO
+#ifdef LIGHT_INDEX_USED
 			light_index,
-			get_light_count(),
 #endif
 			diffuse_light,
 			max_diffuse_intensity,
@@ -1003,10 +1001,9 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 binormal, hvec3 tangent, half anisotropy,
-#ifdef LIGHT_SOURCE_INFO
-		int light_index,
-		int light_count,
 #endif
+#ifdef LIGHT_INDEX_USED
+		int light_index,
 #endif
 		inout hvec3 diffuse_light,
 		inout float max_diffuse_intensity,
@@ -1178,10 +1175,10 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
-#ifdef LIGHT_SOURCE_INFO
 			light_index,
-			get_light_count(),
 #endif
+#ifdef LIGHT_INDEX_USED
+			light_index,
 #endif
 			diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, specular_light);
 }
