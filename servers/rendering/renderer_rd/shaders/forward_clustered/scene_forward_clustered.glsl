@@ -553,6 +553,7 @@ void vertex_shader(vec3 vertex_input,
 	uint cluster_z = uint(clamp((-vertex_interp.z / scene_data.z_far) * 32.0, 0.0, 31.0));
 
 	float max_diffuse_intensity = 0.0;
+	float diffuse_intensity = 0.0;
 
 
 	{ //omni lights
@@ -2749,7 +2750,7 @@ void fragment_shader(in SceneData scene_data) {
 						light_index,
 						get_light_count(),
 #endif
-						diffuse_light, direct_specular_light);
+						diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, direct_specular_light);
 			}
 		}
 	}
