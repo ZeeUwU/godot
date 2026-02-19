@@ -93,7 +93,7 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 #ifdef LIGHT_SOURCE_INFO
 		int light_index, int light_count,
 #endif
-		inout hvec3 diffuse_light, inout hvec3 specular_light) {
+		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout float bands, inout hvec3 specular_light) {
 #if defined(LIGHT_CODE_USED)
 	// Light is written by the user shader.
 	mat4 inv_view_matrix = transpose(mat4(scene_data_block.data.inv_view_matrix[0],
@@ -142,9 +142,11 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 #CODE : LIGHT
 
 	alpha = half(alpha_highp);
-	diffuse_light = hvec3(diffuse_light_highp);
-	specular_light = hvec3(specular_light_highp);
-#else // !LIGHT_CODE_USED
+	// diffuse_light = hvec3(diffuse_light_highp);
+	// specular_light = hvec3(specular_light_highp);
+// #else // !LIGHT_CODE_USED
+#endif  // LIGHT_CODE_USED
+
 	half NdotL = min(A + dot(N, L), half(1.0));
 	half cNdotV = max(dot(N, V), half(1e-4));
 
@@ -225,11 +227,14 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 			// lambert
 			diffuse_brdf_NL = cNdotL * half(1.0 / M_PI);
 #endif
-
-			diffuse_light += light_color * diffuse_brdf_NL * attenuation * cc_attenuation;
+			vec3 diffuse_result = light_color * diffuse_brdf_NL * attenuation;
+			diffuse_light += diffuse_result;
+			diffuse_intensity += diffuse_brdf_NL * attenuation;
+			max_diffuse_intensity = max(max_diffuse_intensity, (diffuse_result.x + diffuse_result.y + diffuse_result.z)/3.0);
 
 #if defined(LIGHT_BACKLIGHT_USED)
 			diffuse_light += light_color * (hvec3(1.0 / M_PI) - diffuse_brdf_NL) * backlight * attenuation;
+			
 #endif
 		}
 
@@ -245,7 +250,10 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 			half mid = half(1.0) - roughness;
 			mid *= mid;
 			half intensity = smoothstep(mid - roughness * half(0.5), mid + roughness * half(0.5), RdotV) * mid;
-			diffuse_light += light_color * intensity * attenuation * specular_amount; // write to diffuse_light, as in toon shading you generally want no reflection
+			vec3 specular_result = light_color * intensity * attenuation * specular_amount;
+			diffuse_light += specular_result; // write to diffuse_light, as in toon shading you generally want no reflection
+			diffuse_intensity += intensity * attenuation * specular_amount;
+			max_diffuse_intensity = max(max_diffuse_intensity, (specular_result.r+specular_result.g+specular_result.b) / 3.0);
 
 #elif defined(SPECULAR_DISABLED)
 			// Do nothing.
@@ -282,162 +290,10 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 		alpha = min(alpha, clamp(half(1.0 - attenuation), half(0.0), half(1.0)));
 #endif
 	}
-#endif // LIGHT_CODE_USED
+// #endif // LIGHT_CODE_USED
 }
 
-#ifndef SHADOWS_DISABLED
 
-// Interleaved Gradient Noise
-// https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
-float quick_hash(vec2 pos) {
-	const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
-	return fract(magic.z * fract(dot(pos, magic.xy)));
-}
-
-half sample_directional_pcf_shadow(texture2D shadow, vec2 shadow_pixel_size, vec4 coord, float taa_frame_count) {
-	vec2 pos = coord.xy;
-	float depth = coord.z;
-
-	//if only one sample is taken, take it from the center
-	if (sc_directional_soft_shadow_samples() == 0) {
-		return half(textureProj(sampler2DShadow(shadow, shadow_sampler), vec4(pos, depth, 1.0)));
-	}
-
-	mat2 disk_rotation;
-	{
-		float r = quick_hash(gl_FragCoord.xy + vec2(taa_frame_count * 5.588238)) * 2.0 * M_PI;
-		float sr = sin(r);
-		float cr = cos(r);
-		disk_rotation = mat2(vec2(cr, -sr), vec2(sr, cr));
-	}
-
-	float avg = 0.0;
-
-	SPEC_CONSTANT_LOOP_ANNOTATION
-	for (uint i = 0; i < sc_directional_soft_shadow_samples(); i++) {
-		avg += textureProj(sampler2DShadow(shadow, shadow_sampler), vec4(pos + shadow_pixel_size * (disk_rotation * scene_data_block.data.directional_soft_shadow_kernel[i].xy), depth, 1.0));
-	}
-
-	return half(avg * (1.0 / float(sc_directional_soft_shadow_samples())));
-}
-
-half sample_pcf_shadow(texture2D shadow, vec2 shadow_pixel_size, vec3 coord, float taa_frame_count) {
-	vec2 pos = coord.xy;
-	float depth = coord.z;
-
-	//if only one sample is taken, take it from the center
-	if (sc_soft_shadow_samples() == 0) {
-		return half(textureProj(sampler2DShadow(shadow, shadow_sampler), vec4(pos, depth, 1.0)));
-	}
-
-	mat2 disk_rotation;
-	{
-		float r = quick_hash(gl_FragCoord.xy + vec2(taa_frame_count * 5.588238)) * 2.0 * M_PI;
-		float sr = sin(r);
-		float cr = cos(r);
-		disk_rotation = mat2(vec2(cr, -sr), vec2(sr, cr));
-	}
-
-	float avg = 0.0;
-
-	SPEC_CONSTANT_LOOP_ANNOTATION
-	for (uint i = 0; i < sc_soft_shadow_samples(); i++) {
-		avg += textureProj(sampler2DShadow(shadow, shadow_sampler), vec4(pos + shadow_pixel_size * (disk_rotation * scene_data_block.data.soft_shadow_kernel[i].xy), depth, 1.0));
-	}
-
-	return half(avg * (1.0 / float(sc_soft_shadow_samples())));
-}
-
-half sample_omni_pcf_shadow(texture2D shadow, float blur_scale, vec2 coord, vec4 uv_rect, vec2 flip_offset, float depth, float taa_frame_count) {
-	//if only one sample is taken, take it from the center
-	if (sc_soft_shadow_samples() == 0) {
-		vec2 pos = coord * 0.5 + 0.5;
-		pos = uv_rect.xy + pos * uv_rect.zw;
-		return half(textureProj(sampler2DShadow(shadow, shadow_sampler), vec4(pos, depth, 1.0)));
-	}
-
-	mat2 disk_rotation;
-	{
-		float r = quick_hash(gl_FragCoord.xy + vec2(taa_frame_count * 5.588238)) * 2.0 * M_PI;
-		float sr = sin(r);
-		float cr = cos(r);
-		disk_rotation = mat2(vec2(cr, -sr), vec2(sr, cr));
-	}
-
-	float avg = 0.0;
-	vec2 offset_scale = blur_scale * 2.0 * scene_data_block.data.shadow_atlas_pixel_size / uv_rect.zw;
-
-	SPEC_CONSTANT_LOOP_ANNOTATION
-	for (uint i = 0; i < sc_soft_shadow_samples(); i++) {
-		vec2 offset = offset_scale * (disk_rotation * scene_data_block.data.soft_shadow_kernel[i].xy);
-		vec2 sample_coord = coord + offset;
-
-		float sample_coord_length_squared = dot(sample_coord, sample_coord);
-		bool do_flip = sample_coord_length_squared > 1.0;
-
-		if (do_flip) {
-			float len = sqrt(sample_coord_length_squared);
-			sample_coord = sample_coord * (2.0 / len - 1.0);
-		}
-
-		sample_coord = sample_coord * 0.5 + 0.5;
-		sample_coord = uv_rect.xy + sample_coord * uv_rect.zw;
-
-		if (do_flip) {
-			sample_coord += flip_offset;
-		}
-		avg += textureProj(sampler2DShadow(shadow, shadow_sampler), vec4(sample_coord, depth, 1.0));
-	}
-
-	return half(avg * (1.0 / float(sc_soft_shadow_samples())));
-}
-
-half sample_directional_soft_shadow(texture2D shadow, vec3 pssm_coord, vec2 tex_scale, float taa_frame_count) {
-	//find blocker
-	float blocker_count = 0.0;
-	float blocker_average = 0.0;
-
-	mat2 disk_rotation;
-	{
-		float r = quick_hash(gl_FragCoord.xy + vec2(taa_frame_count * 5.588238)) * 2.0 * M_PI;
-		float sr = sin(r);
-		float cr = cos(r);
-		disk_rotation = mat2(vec2(cr, -sr), vec2(sr, cr));
-	}
-
-	SPEC_CONSTANT_LOOP_ANNOTATION
-	for (uint i = 0; i < sc_directional_penumbra_shadow_samples(); i++) {
-		vec2 suv = pssm_coord.xy + (disk_rotation * scene_data_block.data.directional_penumbra_shadow_kernel[i].xy) * tex_scale;
-		float d = textureLod(sampler2D(shadow, SAMPLER_LINEAR_CLAMP), suv, 0.0).r;
-		if (d > pssm_coord.z) {
-			blocker_average += d;
-			blocker_count += 1.0;
-		}
-	}
-
-	if (blocker_count > 0.0) {
-		//blockers found, do soft shadow
-		blocker_average /= blocker_count;
-		float penumbra = (-pssm_coord.z + blocker_average) / (1.0 - blocker_average);
-		tex_scale *= penumbra;
-
-		float s = 0.0;
-
-		SPEC_CONSTANT_LOOP_ANNOTATION
-		for (uint i = 0; i < sc_directional_penumbra_shadow_samples(); i++) {
-			vec2 suv = pssm_coord.xy + (disk_rotation * scene_data_block.data.directional_penumbra_shadow_kernel[i].xy) * tex_scale;
-			s += textureProj(sampler2DShadow(shadow, shadow_sampler), vec4(suv, pssm_coord.z, 1.0));
-		}
-
-		return half(s / float(sc_directional_penumbra_shadow_samples()));
-
-	} else {
-		//no blockers found, so no shadow
-		return half(1.0);
-	}
-}
-
-#endif // SHADOWS_DISABLED
 
 half get_omni_attenuation(float distance, float inv_range, float decay) {
 	float nd = distance * inv_range;
@@ -470,7 +326,7 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 		int light_index,
 		int light_count,
 #endif
-		inout hvec3 diffuse_light, inout hvec3 specular_light) {
+		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout float bands, inout hvec3 specular_light) {
 
 	// Omni light attenuation.
 	vec3 light_rel_vec = omni_lights.data[idx].position - vertex;
@@ -738,6 +594,9 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 			get_light_count(),
 #endif
 			diffuse_light,
+			max_diffuse_intensity,
+			diffuse_intensity,
+			bands,
 			specular_light);
 }
 
@@ -776,6 +635,9 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 #endif
 		inout hvec3 diffuse_light,
+		inout float max_diffuse_intensity,
+		inout float diffuse_intensity,
+		inout float bands,
 		inout hvec3 specular_light) {
 
 	// Spot light attenuation.
@@ -947,7 +809,7 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 			get_light_count(),
 #endif
 #endif
-			diffuse_light, specular_light);
+			diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, specular_light);
 }
 
 void reflection_process(uint ref_index, vec3 vertex, hvec3 ref_vec, hvec3 normal, half roughness, hvec3 ambient_light, hvec3 specular_light,
