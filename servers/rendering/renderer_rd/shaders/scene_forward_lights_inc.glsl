@@ -1175,7 +1175,6 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #endif
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
-			light_index,
 #endif
 #ifdef LIGHT_INDEX_USED
 			light_index,
