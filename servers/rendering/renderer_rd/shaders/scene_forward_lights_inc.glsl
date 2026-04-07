@@ -515,9 +515,10 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 
 #CODE : LIGHT
 
+	attenuation = half(attenuation_highp);
 	alpha = half(alpha_highp);
-	// diffuse_light = hvec3(diffuse_light_highp);
-	// specular_light = hvec3(specular_light_highp);
+	diffuse_light = hvec3(diffuse_light_highp);
+	specular_light = hvec3(specular_light_highp);
 // #else // !LIGHT_CODE_USED
 #endif  // LIGHT_CODE_USED
 
