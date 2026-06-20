@@ -869,7 +869,7 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		if (!force_lambert) {
 			actions.render_mode_defines["diffuse_burley"] = "#define DIFFUSE_BURLEY\n";
 		}
-
+s
 		actions.render_mode_defines["diffuse_lambert_wrap"] = "#define DIFFUSE_LAMBERT_WRAP\n";
 		actions.render_mode_defines["diffuse_toon"] = "#define DIFFUSE_TOON\n";
 
