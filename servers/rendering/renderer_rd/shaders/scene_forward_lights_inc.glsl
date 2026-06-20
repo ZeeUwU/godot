@@ -117,7 +117,10 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 B, hvec3 T, half anisotropy,
 #endif
-		inout hvec3 diffuse_light, inout hvec3 specular_light) {
+#ifdef LIGHT_INDEX_USED
+		int light_index,
+#endif
+		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout float bands, inout hvec3 specular_light) {
 #if defined(LIGHT_CODE_USED)
 	// Light is written by the user shader.
 	mat4 inv_view_matrix = transpose(mat4(scene_data_block.data.inv_view_matrix[0],
@@ -173,7 +176,7 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 	alpha = half(alpha_highp);
 	diffuse_light = hvec3(diffuse_light_highp);
 	specular_light = hvec3(specular_light_highp);
-#else // !LIGHT_CODE_USED
+#endif // !LIGHT_CODE_USED
 	half NdotL = min(A + dot(N, L), half(1.0));
 	half cNdotV = max(dot(N, V), half(1e-4));
 
@@ -241,7 +244,10 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 			diffuse_brdf_NL = cNdotL * half(1.0 / M_PI);
 #endif
 
-			diffuse_light += light_color * diffuse_brdf_NL * attenuation * cc_attenuation;
+			vec3 diffuse_result = light_color * diffuse_brdf_NL * attenuation;
+			diffuse_light += diffuse_result;
+			diffuse_intensity += diffuse_brdf_NL * attenuation;
+			max_diffuse_intensity = max(max_diffuse_intensity, (diffuse_result.x + diffuse_result.y + diffuse_result.z)/3.0);
 
 #if defined(LIGHT_BACKLIGHT_USED)
 			diffuse_light += light_color * (hvec3(1.0 / M_PI) - diffuse_brdf_NL) * backlight * attenuation;
@@ -297,7 +303,7 @@ void light_compute(hvec3 N, hvec3 L, hvec3 V, half A, hvec3 light_color, bool is
 		alpha = min(alpha, clamp(half(1.0 - attenuation), half(0.0), half(1.0)));
 #endif
 	}
-#endif // LIGHT_CODE_USED
+// #endif // LIGHT_CODE_USED
 }
 
 #ifndef SHADOWS_DISABLED
@@ -481,7 +487,10 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 binormal, hvec3 tangent, half anisotropy,
 #endif
-		inout hvec3 diffuse_light, inout hvec3 specular_light) {
+#ifdef LIGHT_INDEX_USED
+		int light_index,
+#endif
+		inout hvec3 diffuse_light, inout float max_diffuse_intensity, inout float diffuse_intensity, inout float bands, inout hvec3 specular_light) {
 
 	// Omni light attenuation.
 	vec3 light_rel_vec = omni_lights.data[idx].position - vertex;
@@ -748,7 +757,13 @@ void light_process_omni(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
 #endif
+#ifdef LIGHT_INDEX_USED
+			light_index,
+#endif
 			diffuse_light,
+			max_diffuse_intensity,
+			diffuse_intensity,
+			bands,
 			specular_light);
 }
 
@@ -782,7 +797,13 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 		hvec3 binormal, hvec3 tangent, half anisotropy,
 #endif
+#ifdef LIGHT_INDEX_USED
+		int light_index,
+#endif
 		inout hvec3 diffuse_light,
+		inout float max_diffuse_intensity,
+		inout float diffuse_intensity,
+		inout float bands,
 		inout hvec3 specular_light) {
 
 	// Spot light attenuation.
@@ -950,8 +971,10 @@ void light_process_spot(uint idx, vec3 vertex, hvec3 eye_vec, hvec3 normal, vec3
 #ifdef LIGHT_ANISOTROPY_USED
 			binormal, tangent, anisotropy,
 #endif
-
-			diffuse_light, specular_light);
+#ifdef LIGHT_INDEX_USED
+			light_index,
+#endif
+			diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, specular_light);
 }
 
 // implementation of area lights with Linearly Transformed Cosines (LTC): https://eheitzresearch.wordpress.com/415-2/

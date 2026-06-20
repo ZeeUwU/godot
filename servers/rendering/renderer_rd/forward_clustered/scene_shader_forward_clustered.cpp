@@ -804,7 +804,16 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		actions.renames["ATTENUATION"] = "attenuation_highp";
 		actions.renames["DIFFUSE_LIGHT"] = "diffuse_light_highp";
 		actions.renames["SPECULAR_LIGHT"] = "specular_light_highp";
+		actions.renames["LIGHT_INDEX"] = "light_index";
 
+		// for post light
+	
+		actions.renames["MAX_DIFFUSE_INTENSITY"] = "max_diffuse_intensity";
+		actions.renames["BANDS"] = "bands";
+		actions.renames["AMBIENT_LIGHT"] = "ambient_light";
+		actions.renames["SPECULAR_LIGHT_LOWP"] = "specular_light";
+		actions.renames["DIFFUSE_LIGHT_LOWP"] = "diffuse_light";
+		
 		actions.usage_defines["NORMAL"] = "#define NORMAL_USED\n";
 		actions.usage_defines["TANGENT"] = "#define TANGENT_USED\n";
 		actions.usage_defines["BINORMAL"] = "@TANGENT";
@@ -846,6 +855,7 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		actions.usage_defines["SSS_TRANSMITTANCE_DEPTH"] = "#define ENABLE_TRANSMITTANCE\n";
 		actions.usage_defines["BACKLIGHT"] = "#define LIGHT_BACKLIGHT_USED\n";
 		actions.usage_defines["SCREEN_UV"] = "#define SCREEN_UV_USED\n";
+		actions.usage_defines["LIGHT_INDEX"] = "#define LIGHT_INDEX_USED\n";
 
 		actions.usage_defines["FOG"] = "#define CUSTOM_FOG_USED\n";
 		actions.usage_defines["RADIANCE"] = "#define CUSTOM_RADIANCE_USED\n";
@@ -869,7 +879,7 @@ void SceneShaderForwardClustered::init(const String p_defines) {
 		if (!force_lambert) {
 			actions.render_mode_defines["diffuse_burley"] = "#define DIFFUSE_BURLEY\n";
 		}
-s
+
 		actions.render_mode_defines["diffuse_lambert_wrap"] = "#define DIFFUSE_LAMBERT_WRAP\n";
 		actions.render_mode_defines["diffuse_toon"] = "#define DIFFUSE_TOON\n";
 

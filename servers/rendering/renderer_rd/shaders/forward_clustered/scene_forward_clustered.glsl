@@ -552,6 +552,9 @@ void vertex_shader(vec3 vertex_input,
 	uint cluster_offset = (implementation_data.cluster_width * cluster_pos.y + cluster_pos.x) * (implementation_data.max_cluster_element_count_div_32 + 32);
 	uint cluster_z = uint(clamp((-vertex_interp.z / scene_data.z_far) * 32.0, 0.0, 31.0));
 
+	float max_diffuse_intensity = 0.0;
+	float diffuse_intensity = 0.0;
+
 	{ //omni lights
 
 		uint cluster_omni_offset = cluster_offset;
@@ -582,7 +585,7 @@ void vertex_shader(vec3 vertex_input,
 				}
 
 				light_process_omni_vertex(light_index, vertex, view, normal, roughness,
-						diffuse_light_interp.rgb, specular_light_interp.rgb);
+						diffuse_light_interp.rgb, max_diffuse_intensity, specular_light_interp.rgb);
 			}
 		}
 	}
@@ -617,7 +620,7 @@ void vertex_shader(vec3 vertex_input,
 				}
 
 				light_process_spot_vertex(light_index, vertex, view, normal, roughness,
-						diffuse_light_interp.rgb, specular_light_interp.rgb);
+						diffuse_light_interp.rgb, max_diffuse_intensity, specular_light_interp.rgb);
 			}
 		}
 	}
@@ -640,6 +643,7 @@ void vertex_shader(vec3 vertex_input,
 				light_compute_vertex(normal, directional_lights.data[0].direction, view,
 						directional_lights.data[0].color * directional_lights.data[0].energy,
 						true, roughness,
+						max_diffuse_intensity,
 						directional_diffuse,
 						directional_specular);
 			} else {
@@ -647,6 +651,7 @@ void vertex_shader(vec3 vertex_input,
 						directional_lights.data[i].color * directional_lights.data[i].energy,
 						true, roughness,
 						diffuse_light_interp.rgb,
+						max_diffuse_intensity,
 						specular_light_interp.rgb);
 			}
 		}
@@ -1205,6 +1210,8 @@ vec3 encode24(vec3 v) {
 void fragment_shader(in SceneData scene_data) {
 	uint instance_index = instance_index_interp;
 
+	float bands = 5.0;
+
 #ifdef PREMUL_ALPHA_USED
 	float premul_alpha = 1.0;
 #endif // PREMUL_ALPHA_USED
@@ -1653,6 +1660,8 @@ void fragment_shader(in SceneData scene_data) {
 
 #endif //not render depth
 	/////////////////////// LIGHTING //////////////////////////////
+	float max_diffuse_intensity = 0.0;
+	float  diffuse_intensity = 0.0;
 
 #ifdef NORMAL_USED
 	if (bool(scene_data.flags & SCENE_DATA_FLAGS_USE_ROUGHNESS_LIMITER)) {
@@ -2661,6 +2670,7 @@ void fragment_shader(in SceneData scene_data) {
 #endif
 
 			float size_A = sc_use_directional_soft_shadows() ? directional_lights.data[i].size : 0.0;
+			int light_index = int(i);
 
 			light_compute(normal, directional_lights.data[i].direction, normalize(view), size_A,
 #ifndef DEBUG_DRAW_PSSM_SPLITS
@@ -2686,9 +2696,14 @@ void fragment_shader(in SceneData scene_data) {
 #endif // LIGHT_CLEARCOAT_USED
 #ifdef LIGHT_ANISOTROPY_USED
 					binormal,
-					tangent, anisotropy,
+#endif
+#ifdef LIGHT_INDEX_USED
+					light_index,
 #endif
 					diffuse_light,
+					max_diffuse_intensity,
+					diffuse_intensity,
+					bands,
 					direct_specular_light);
 		}
 #endif // USE_VERTEX_LIGHTING
@@ -2731,7 +2746,9 @@ void fragment_shader(in SceneData scene_data) {
 				if (omni_lights.data[light_index].bake_mode == LIGHT_BAKE_STATIC && bool(instances.data[instance_index].flags & INSTANCE_FLAGS_USE_LIGHTMAP)) {
 					continue; // Statically baked light and object uses lightmap, skip
 				}
-
+				
+				int int_light_index = int(light_index);
+				
 				light_process_omni(light_index, vertex, view, normal, vertex_ddx, vertex_ddy, f0, roughness, metallic, scene_data.taa_frame_count, albedo, alpha, screen_uv, energy_compensation,
 #ifdef LIGHT_BACKLIGHT_USED
 						backlight,
@@ -2751,8 +2768,10 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
 #endif
-						diffuse_light, direct_specular_light);
-			}
+#ifdef LIGHT_INDEX_USED
+						int_light_index,
+#endif
+						diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, direct_specular_light);			}
 		}
 	}
 
@@ -2793,6 +2812,8 @@ void fragment_shader(in SceneData scene_data) {
 					continue; // Statically baked light and object uses lightmap, skip
 				}
 
+				int int_light_index = int(light_index);
+
 				light_process_spot(light_index, vertex, view, normal, vertex_ddx, vertex_ddy, f0, roughness, metallic, scene_data.taa_frame_count, albedo, alpha, screen_uv, energy_compensation,
 #ifdef LIGHT_BACKLIGHT_USED
 						backlight,
@@ -2812,7 +2833,10 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef LIGHT_ANISOTROPY_USED
 						binormal, tangent, anisotropy,
 #endif
-						diffuse_light, direct_specular_light);
+#ifdef LIGHT_INDEX_USED
+						int_light_index,
+#endif
+						diffuse_light, max_diffuse_intensity, diffuse_intensity, bands, direct_specular_light);
 			}
 		}
 	}
@@ -3087,6 +3111,31 @@ void fragment_shader(in SceneData scene_data) {
 #ifdef MODE_UNSHADED
 	frag_color = vec4(albedo, alpha);
 #else
+
+#if defined(POST_LIGHT_CODE_USED)
+
+	{
+#CODE : POST_LIGHT
+	}
+
+#else // !POST_LIGHT_CODE_USED
+	// float base_diffuse_intensity = (diffuse_light.x + diffuse_light.y + diffuse_light.z)/3.0;
+	// float base_diffuse_intensity = dot(diffuse_light,vec3(0.21,0.72,0.07));
+
+	float base_diffuse_intensity = max(diffuse_intensity,0.001);
+
+	// Floor + 0.5 is more consistent than rounding in glsl. Offsets properly built in also
+	float stepped_diffuse_intensity = (floor((max_diffuse_intensity * (bands-1.0)+0.5)) / (bands-1.0));
+
+
+	stepped_diffuse_intensity = clamp(stepped_diffuse_intensity, 0.0,1.0);
+	diffuse_light /= base_diffuse_intensity;
+	diffuse_light *= stepped_diffuse_intensity;
+
+#endif //POST_LIGHT_CODE_USED
+
+
+
 	frag_color = vec4(emission + ambient_light + diffuse_light + direct_specular_light + indirect_specular_light, alpha);
 //frag_color = vec4(1.0);
 #endif //USE_NO_SHADING
